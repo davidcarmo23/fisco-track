@@ -1,0 +1,3 @@
+server/fiscotrack/fiscotrack/settings.py
+client/app/.env
+server/fiscotrack/.env
