@@ -21,7 +21,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Expense
         fields = '__all__'
-        extra_kwarg = {"user": {"read_only": True}}
+        extra_kwargs = {"user": {"read_only": True}}
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:

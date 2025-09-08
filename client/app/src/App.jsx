@@ -5,6 +5,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './Components/ProtectedRoute';
+import Expenses from './pages/Expenses';
 
 function Logout() {
   localStorage.clear();
@@ -32,6 +33,9 @@ function App() {
         } />
         <Route path='/register' element={
           <RegisterAndLogout />
+        } />
+        <Route path='/expenses' element={
+          <Expenses />
         } />
         <Route path='*' element={
           <NotFound />

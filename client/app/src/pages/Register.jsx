@@ -1,4 +1,4 @@
-import Form from '../Components/AuthForm';
+import AuthForm from '../Components/AuthForm';
 import authSvg from '../assets/auth.svg';
 
 function Register() {
@@ -10,7 +10,7 @@ function Register() {
             </div>
 
             <div className="page-right">
-                <Form route="/api/user/register/" method="register" />
+                <AuthForm route="/api/user/register/" method="register" />
             </div>
 
         </div>

@@ -1,4 +1,4 @@
-import Form from '../Components/AuthForm';
+import AuthForm from '../Components/AuthForm';
 import authSvg from '../assets/auth.svg';
 
 function Login() {
@@ -10,7 +10,7 @@ function Login() {
             </div>
 
             <div className="page-right">
-                <Form route="/api/token/" method="login" />
+                <AuthForm route="/api/token/" method="login" />
             </div>
 
         </div>
