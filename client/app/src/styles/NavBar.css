@@ -1,0 +1,45 @@
+.navBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--main-gray);
+    padding: 0.75rem 1.5rem;
+}
+
+.navBar button {
+    background: none;
+    border: none;
+    color: white;
+    margin: 0 0.5rem;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.userContainer {
+    position: relative;
+}
+
+.userButton {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.userIcon {
+    font-size: 1.5rem;
+}
+
+.userDropdown {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    display: none;
+    flex-direction: column;
+    background: white;
+    border-radius: 6px;
+    padding: 0.5rem;
+}
+
+.userContainer:hover .userDropdown {
+    display: flex;
+}

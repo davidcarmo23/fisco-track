@@ -1,6 +1,6 @@
 import { useState } from "react";
 import api from '../api';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, NavLink } from "react-router-dom";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
 
 import '../App.css';
@@ -74,8 +74,12 @@ function AuthForm({ route, method }) {
                 </div>
 
                 <div className="authRedirect">
-                    <a href="#">Sign Up to Get Started</a>
-                    <a href="#">Forgot Password?</a>
+                    <NavLink to="/register">
+                        Sign Up to Get Started
+                    </NavLink>
+                    <NavLink to="/reset_password">
+                        Forgot Password?
+                    </NavLink>
                 </div>
 
 
@@ -129,9 +133,10 @@ function AuthForm({ route, method }) {
                     />
                     <button type="submit">Register</button>
 
-                    <div className="authRedirect">
-                        <a href="#">Already have an account?</a>
-                    </div>
+                    <NavLink to="/login">
+                        Already have an account?
+                    </NavLink>
+                    
                 </div>
             </form>
         );
