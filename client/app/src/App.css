@@ -24,32 +24,6 @@ dialog {
   min-height: 500px;
 }
 
-.page-container {
-  display: flex;
-  height: 100vh;
-}
-
-/* Left section (illustration or branding) */
-.page-left {
-  flex: 1;
-  background-color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Right section (form with solid color background) */
-.page-right {
-  flex: 1;
-  background-color: var(--main-purple);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-  border-top-left-radius: 30px;
-  border-bottom-left-radius: 30px;
-}
 
 .card {
   background: #fff;

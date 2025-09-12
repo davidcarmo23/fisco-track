@@ -3,7 +3,8 @@ from .views import (
     InvoiceListCreate, InvoiceDelete, InvoiceDetail,
     ExpenseListCreate, ExpenseDelete, ExpenseDetail,
     CategoryListCreate, CategoryDetail,
-    ReceiptListCreate, ReceiptDetail
+    ReceiptListCreate, ReceiptDetail,
+    GetUserView
 )
 
 urlpatterns = [

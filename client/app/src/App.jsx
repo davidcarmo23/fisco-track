@@ -6,6 +6,9 @@ import Login from "./pages/Login";
 import Expenses from "./pages/Expenses";
 import NotFound from "./pages/NotFound";
 import Register from "./pages/Register"
+import { ThemeProvider } from "@mui/material/styles";
+import theme from "./styles/theme";
+
 function AppContent() {
   const location = useLocation();
 
@@ -48,7 +51,9 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter>
+    <ThemeProvider theme={theme}>
       <AppContent />
+      </ThemeProvider>
     </BrowserRouter>
   );
 }
