@@ -44,8 +44,8 @@ function NavBar() {
 
   return (
     <>
-      <AppBar position="static" color="primary">
-        <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
+      <AppBar position="static" color="primary" sx={{marginBottom: "15px"}}>
+        <Toolbar sx={{ display: "flex", justifyContent: "space-between", marginX: 5 }}>
           {/* Brand */}
           <Typography
             variant="h6"
@@ -129,7 +129,7 @@ function NavBar() {
         anchor="left"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        PaperProps={{
+        Paper={{
           sx: {
             width: { xs: "100%", sm: 280 },
             bgcolor: "background.paper",

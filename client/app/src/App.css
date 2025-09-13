@@ -105,3 +105,16 @@ dialog {
   justify-content: end;
   gap: 1rem;
 }
+
+.progress-bar {
+  height: 8px;
+  background: #eee;
+  border-radius: 4px;
+  margin-top: 6px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #5c6bc0;
+  border-radius: 4px;
+}
