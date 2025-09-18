@@ -14,7 +14,7 @@ class Category(models.Model):
 class Expense(models.Model):
     title = models.CharField(max_length=50)
     date = models.DateField()
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="expenses")
     value = models.FloatField(default=0)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="expenses")
 

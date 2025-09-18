@@ -124,7 +124,7 @@ function AuthForm({ route, method }) {
         <Button
           type="submit"
           variant="contained"
-          color="primary"
+          sx={{bgcolor: "button.primary", color:"text.dark"}}
           fullWidth
           disabled={loading}
         >

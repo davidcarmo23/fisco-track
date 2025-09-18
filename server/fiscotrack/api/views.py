@@ -44,15 +44,20 @@ class InvoiceDelete(generics.DestroyAPIView):
 class ExpenseListCreate(generics.ListCreateAPIView):
     serializer_class = ExpenseSerializer
     permission_classes = [IsAuthenticated]
-
+    
     def get_queryset(self):
         user = self.request.user
-        return Expense.objects.filter(user= user)
+        return Expense.objects.filter(user=user)
+    
     def perform_create(self, serializer):
-        if serializer.is_valid():
+        print("Request data:", self.request.data)
+        print("Serializer validated data:", serializer.validated_data)
+        try:
             serializer.save(user=self.request.user)
-        else:
-            print(serializer.errors)
+        except Exception as e:
+            print("Error type:", type(e))
+            print("Error message:", str(e))
+            raise
 
 class ExpenseDelete(generics.DestroyAPIView):
     serializer_class = ExpenseSerializer

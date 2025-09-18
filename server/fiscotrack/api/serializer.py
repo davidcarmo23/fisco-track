@@ -38,14 +38,13 @@ class InvoiceSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ExpenseSerializer(serializers.ModelSerializer):
-    category = CategorySerializer(read_only=True)
+    category_details = CategorySerializer(source='category', read_only=True)
     total_received = serializers.FloatField(read_only=True)
     is_paid = serializers.BooleanField(read_only=True)
-    # invoices = InvoiceSerializer(many=True, read_only=True)
     
     class Meta:
         model = Expense
-        fields = '__all__'
+        fields = ['id', "title",'date', 'value', 'category', 'category_details', 'total_received','is_paid']
         extra_kwargs = {"user": {"read_only": True}}
 
 class UserSerializer(serializers.ModelSerializer):

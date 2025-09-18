@@ -1,99 +1,130 @@
-import { use, useEffect, useState } from "react";
-import api from '../api';
-import "../App.css";
-import "../styles/AuthForm.css";
-import Loader from "./Loader";
+import { useEffect, useState } from "react";
+import api from "../api";
+import {
+  TextField,
+  Button,
+  MenuItem,
+  Stack,
+  CircularProgress,
+  Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
-function ExpenseModalForm({ route, toggleDialog, getExpenses }) {
+function ExpenseModalForm({ open, onClose, getExpenses }) {
+  const [title, setTitle] = useState("");
+  const [date, setDate] = useState(null);
+  const [category, setCategory] = useState("");
+  const [value, setValue] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-    const [title, setTitle] = useState("");
-    const [date, setDate] = useState("");
-    const [category, setCategory] = useState(0);
-    const [value, setValue] = useState(0);
+  useEffect(() => {
+    api
+      .get("/api/categories/")
+      .then((res) => setCategories(res.data))
+      .catch(() => setCategories([]));
+  }, []);
 
-    const [loading, setLoading] = useState(false);
+  const createExpense = (e) => {
+    e.preventDefault();
+    setLoading(true);
 
+    api
+      .post("/api/expenses/", {
+        title,
+        date: date ? date.toISOString().split("T")[0] : null,
+        category: category,
+        value,
+      })
+      .then((res) => {
+        if (res.status === 201) {
+          alert("Expense created ✅");
+          getExpenses();
+          onClose();
+        } else {
+          alert("Failed to create expense ❌");
+        }
+      })
+      .catch((err) => alert(err))
+      .finally(() => setLoading(false));
+  };
 
-    const createExpense = (e) => {
-        setLoading(true);
-        e.preventDefault();
-        api.post(route, {
-            title,
-            date,
-            category,
-            value
-        }).then((res) => {
-            if (res.status === 201) {
-                setLoading(false);
-                alert("Expense created");
-            } else {
-                alert("Failed to create expense");
-            }
-        }).catch((err) => alert(err));
-        getExpenses();
-    }
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Add Expense</DialogTitle>
+      <DialogContent dividers>
+        <form onSubmit={createExpense}>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label="Title"
+              variant="outlined"
+              fullWidth
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
 
-    return (
-        <div className="card">
-            <div className="card-title">
-                <h2>Create Expense</h2>
-            </div>
-            <form onSubmit={createExpense}>
-                <div className="fieldsHolder">
-                    <div className="fieldGroup">
-                        <label>Title:</label>
-                        <input
-                            type="text"
-                            name="title"
-                            placeholder="Title"
-                            onChange={(e) => setTitle(e.target.value)}
-                            required
-                        />
-                    </div>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker
+                label="Date"
+                value={date}
+                onChange={(newValue) => setDate(newValue)}
+                slotProps={{ textField: { fullWidth: true, required: true } }}
+              />
+            </LocalizationProvider>
 
-                    <div className="fieldGroup">
-                        <label>Date:</label>
-                        <input
-                            type="date"
-                            name="date"
-                            placeholder="Date"
-                            onChange={(e) => setDate(e.target.value)}
-                            required
-                        />
-                    </div>
+            <TextField
+              select
+              label="Category"
+              variant="outlined"
+              fullWidth
+              required
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              {categories.map((cat) => (
+                <MenuItem key={cat.id} value={cat.id}>
+                  {cat.title}
+                </MenuItem>
+              ))}
+            </TextField>
 
-                    <div className="fieldGroup">
-                        <label>Category:</label>
-                        <input
-                            type="number"
-                            name="category"
-                            placeholder="Category"
-                            onChange={(e) => setCategory(e.target.value)}
-                        />
-                    </div>
+            <TextField
+              type="number"
+              label="Value (€)"
+              variant="outlined"
+              fullWidth
+              required
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+            />
+          </Stack>
 
-                    <div className="fieldGroup">
-                        <label>Value:</label>
-                        <input
-                            type="number"
-                            name="value"
-                            placeholder="Value"
-                            onChange={(e) => setValue(e.target.value)}
-                            required
-                        />
-                    </div>
-                    {loading && <Loader/>}
-                    <div className="modalButtons">
-                        <button onClick={() => {
-                            toggleDialog();
-                        }}>Close</button>
-                        <button className="button-primary" type="submit">Create</button>
-                    </div>
-
-                </div>
-            </form>
-        </div>
-    );
+          <DialogActions sx={{ mt: 2 }}>
+            <Button onClick={onClose} color="secondary">
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={loading}
+              startIcon={
+                loading ? <CircularProgress size={18} color="inherit" /> : null
+              }
+            >
+              {loading ? "Creating..." : "Create"}
+            </Button>
+          </DialogActions>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
-export default ExpenseModalForm
+export default ExpenseModalForm;

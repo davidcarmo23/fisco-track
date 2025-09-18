@@ -1,6 +1,6 @@
 import { Grid, Typography, Box } from "@mui/material";
 import AuthForm from "../Components/AuthForm";
-import authSvg from "../assets/auth.svg";
+import authSvg from "../assets/auth.png";
 
 function Login() {
   return (
@@ -9,7 +9,7 @@ function Login() {
       <Grid
         size={{ xs: 12, sm: 6, md: 6, lg: 6, xl:6 }}
         sx={{
-          backgroundColor: "background.default",
+          backgroundColor: "background.secondary",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
@@ -35,7 +35,7 @@ function Login() {
       <Grid
         size={{ xs: 12, sm: 6, md: 6, lg: 6, xl:6 }}
         sx={{
-          backgroundColor: "#9192FF",
+          backgroundColor: "primary.main",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",

@@ -1,11 +1,11 @@
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import NavBar from "./Components/NavBar";
-import ProtectedRoute from "./Components/ProtectedRoute";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import ProtectedRoute from "./Components/Global_Layout/ProtectedRoute";
+import Layout from "./Components/Global_Layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Expenses from "./pages/Expenses";
 import NotFound from "./pages/NotFound";
-import Register from "./pages/Register"
+import Register from "./pages/Register";
 import { ThemeProvider } from "@mui/material/styles";
 import theme from "./styles/theme";
 
@@ -14,45 +14,54 @@ function AppContent() {
 
   function Logout() {
     localStorage.clear();
-    return <Navigate to='/login' />
+    return <Navigate to="/login" />;
   }
 
   function RegisterAndLogout() {
     localStorage.clear();
-    return <Register />
+    return <Register />;
   }
 
-  // Paths where NavBar should not appear
-  const hideNavPaths = ["/login", "/logout", "/register"];
-
   return (
-    <>
-      {!hideNavPaths.includes(location.pathname) && <NavBar />}
+    <Routes>
+      {/* Public routes */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/logout" element={<Logout />} />
+      <Route path="/register" element={<RegisterAndLogout />} />
 
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
+      {/* Protected routes (with "internal" Layout) */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <Layout>
               <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/login" element={<Login />} />
-        <Route path="/logout" element={<Logout />} />
-        <Route path="/register" element={<RegisterAndLogout />} />
-        <Route path="/expenses" element={<Expenses />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </>
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/expenses"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Expenses />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Fallback */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 }
 
 function App() {
   return (
     <BrowserRouter>
-    <ThemeProvider theme={theme}>
-      <AppContent />
+      <ThemeProvider theme={theme}>
+        <AppContent />
       </ThemeProvider>
     </BrowserRouter>
   );
