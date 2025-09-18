@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import api from "../api";
 import ExpenseModalForm from "../Components/ExpenseModalForm";
 import Expense from "../Components/Expense";
@@ -7,22 +7,143 @@ import {
   TableHead, TableRow, Paper, IconButton,
   Box, Typography, Button, Stack
 } from "@mui/material";
+import { DataGrid } from '@mui/x-data-grid';
 import { Edit, Delete, Add, FileUpload } from "@mui/icons-material";
 
+
+const ActionButtons = ({ expense, onEdit, onDelete }) => (
+  <Box sx={{ display: 'flex', gap: 1 }}>
+    <IconButton
+      size="small"
+      onClick={() => onEdit(expense)}
+      aria-label="edit"
+    >
+      <Edit />
+    </IconButton>
+    <IconButton
+      size="small"
+      color="error"
+      onClick={() => onDelete(expense.id)}
+      aria-label="delete"
+    >
+      <Delete />
+    </IconButton>
+  </Box>
+);
+
 function Expenses() {
+
   const [expenses, setExpenses] = useState([]);
   const [open, setOpen] = useState(false);
+  const [expenseToEdit, setExpenseToEdit] = useState(null)
+  const paginationModel = { page: 0, pageSize: 10 };
+
+  // Callbacks estáveis para evitar re-renders
+  const handleEdit = useCallback((expense) => {
+    setExpenseToEdit(expense);
+    setOpen(true);
+  }, []);
+
+  const handleDelete = useCallback((id) => {
+    deleteExpense(id);
+    getExpenses()
+  }, []);
+
+
+  const columns = [
+    { field: 'id', headerName: 'ID', width: 80 },
+    { field: 'title', headerName: 'Title', width: 250, flex: 1 },
+    {
+      field: 'date',
+      headerName: 'Date',
+      width: 150,
+      sortComparator: (param1, param2) => {
+        const date1 = param1.api.getRow(param1.id)?.date;
+        const date2 = param2.api.getRow(param2.id)?.date;
+
+        if (!date1 && !date2) return 0;
+        if (!date1) return -1;
+        if (!date2) return 1;
+
+        return new Date(date1).getTime() - new Date(date2).getTime();
+      },
+      renderCell: (params) => {
+        if (!params.row?.date) return '-';
+        return new Date(params.row.date).toLocaleDateString("pt-PT");
+      }
+    },
+    {
+      field: 'category_details',
+      headerName: 'Category',
+      width: 180,
+      sortComparator: (param1, param2) => {
+        // Sort pelo título da categoria
+        const cat1 = param1.api.getRow(param1.id)?.category_details?.title || '';
+        const cat2 = param2.api.getRow(param2.id)?.category_details?.title || '';
+        return cat1.localeCompare(cat2);
+      },
+      renderCell: (params) => {
+        const category = params.row?.category_details;
+        if (!category) return '-';
+        return (
+          <span style={{ color: category.color || '#000' }}>
+            {category.title || 'No title'}
+          </span>
+        );
+      }
+    },
+    {
+      field: 'value',
+      headerName: 'Value',
+      width: 150,
+      align: 'right',
+      type: "number",
+      valueGetter: (params) => params.row?.value || 0,
+      renderCell: (params) => {
+        const value = params.row?.value;
+        if (value == null) return '0.00 €';
+        return `${parseFloat(value).toFixed(2)} €`;
+      }
+    },
+    {
+      field: 'total_received',
+      headerName: 'Paid',
+      width: 150,
+      align: 'right',
+      type: 'number',
+      valueGetter: (params) => params.row?.total_received || 0,
+      renderCell: (params) => {
+        const totalReceived = params.row?.total_received;
+        if (totalReceived == null) return '0.00 €';
+        return `${parseFloat(totalReceived).toFixed(2)} €`;
+      }
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 120,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <ActionButtons
+          expense={params.row}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      )
+    }
+  ];
 
   useEffect(() => {
     getExpenses();
   }, []);
+
 
   const getExpenses = () => {
     api
       .get("/api/expenses/")
       .then((res) => res.data)
       .then((data) => {
-        console.log(data);
         setExpenses(data);
       })
       .catch((err) => alert(err));
@@ -42,8 +163,9 @@ function Expenses() {
       .catch((err) => alert(err));
   };
 
-  const editExpense = (id) => {
-    // future edit handler
+  const handleCloseModal = () => {
+    setOpen(false);
+    setExpenseToEdit(null); // Reset quando fechar
   };
 
   return (
@@ -84,58 +206,17 @@ function Expenses() {
         </Stack>
       </Box>
 
-      {/* Table */}
-      <TableContainer>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Title</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>Category</TableCell>
-              <TableCell align="right">Value</TableCell>
-              <TableCell align="right">Paid</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {expenses.map((expense) => (
-              <TableRow key={expense.id}>
-                <TableCell>{expense.id}</TableCell>
-                <TableCell>{expense.title}</TableCell>
-                <TableCell>
-                  {new Date(expense.date).toLocaleDateString("pt-PT")}
-                </TableCell>
-                <TableCell sx={{ color: `${expense.category_details.color}` }}>{expense.category_details.title}</TableCell>
-                <TableCell align="right">
-                  {expense.value.toFixed(2)} €
-                </TableCell>
-                <TableCell align="right">
-                  {expense.total_received.toFixed(2)} €
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton
-                    onClick={() => editExpense(expense.id)}
-                    size="small"
-                  >
-                    <Edit />
-                  </IconButton>
-                  <IconButton
-                    onClick={() => deleteExpense(expense.id)}
-                    size="small"
-                    color="error"
-                  >
-                    <Delete />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      {/* DataTable */}
+      <DataGrid
+        rows={expenses}
+        columns={columns}
+        initialState={{ pagination: { paginationModel } }}
+        pageSizeOptions={[5, 10, 15, 20]}
+        disableRowSelectionOnClick
+        sx={{ border: 0 }}
+      />
 
-
-      <ExpenseModalForm open={open} onClose={() => setOpen(false)} getExpenses={getExpenses} />
+      <ExpenseModalForm open={open} onClose={handleCloseModal} getExpenses={getExpenses} expenseToEdit={expenseToEdit} />
     </Paper>
   );
 }
