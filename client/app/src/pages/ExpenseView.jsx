@@ -1,9 +1,10 @@
-import { Card, CardHeader, CardContent, CardActions, Typography, Chip, IconButton, Box } from "@mui/material";
-import { Edit, Delete } from "@mui/icons-material";
-import DynamicTab from "../Components/Global_Layout/DynamicTab";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import api from '../api';
+
+import DynamicTab from "../Components/Global_Layout/DynamicTab";
+import { Card, CardHeader, CardContent, CardActions, Typography, Chip, IconButton, Box } from "@mui/material";
+import { Edit, Delete } from "@mui/icons-material";
 
 function ExpenseView() {
   const { id } = useParams();
@@ -66,19 +67,16 @@ function ExpenseView() {
             </Box>
           </Box>
 
-          {/* Associated items container */}
           <Box mt={2}>
-            {/* Tabs */}
-            <Box>
-              <DynamicTab currEl={"Expenses"} />
-            </Box>
-            <Box>
-              {/* Content */}
-            </Box>
+            <DynamicTab
+              currEl="Expenses"
+              parentId={expense?.id}
+            />
           </Box>
+
         </CardContent>
       </Card>
-        
+
     </>
   );
 }

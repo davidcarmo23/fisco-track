@@ -20,7 +20,7 @@ function DataTableBase({
                     alignItems: "center",
                     px: 2,
                     py: 1.5,
-                    bgcolor: "grey.100",
+                    bgcolor: "#ffff",
                     borderBottom: "1px solid",
                     borderColor: "grey.300",
                 }}

@@ -4,9 +4,11 @@ import Layout from "./Components/Global_Layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Expenses from "./pages/Expenses";
+import Receipts from "./pages/Receipts";
+import Invoices from "./pages/Invoices";
 import NotFound from "./pages/NotFound";
 import Register from "./pages/Register";
-import ExpenseView from "./pages/Expense"
+import ExpenseView from "./pages/ExpenseView"
 import { ThemeProvider } from "@mui/material/styles";
 import theme from "./styles/theme";
 
@@ -61,6 +63,48 @@ function AppContent() {
           </ProtectedRoute>
         }
       />
+
+      <Route
+        path="/invoices"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Invoices />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      {/* <Route
+        path="/invoices/view/:id"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <InvoiceView />
+            </Layout>
+          </ProtectedRoute>
+        }
+      /> */}
+
+      <Route
+        path="/receipts"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Receipts />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      {/* <Route
+        path="/receipts/view/:id"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ReceiptView />
+            </Layout>
+          </ProtectedRoute>
+        }
+      /> */}
 
       {/* Fallback */}
       <Route path="*" element={<NotFound />} />
