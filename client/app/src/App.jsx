@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Expenses from "./pages/Expenses";
 import NotFound from "./pages/NotFound";
 import Register from "./pages/Register";
+import ExpenseView from "./pages/Expense"
 import { ThemeProvider } from "@mui/material/styles";
 import theme from "./styles/theme";
 
@@ -46,6 +47,16 @@ function AppContent() {
           <ProtectedRoute>
             <Layout>
               <Expenses />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/expenses/view/:id"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ExpenseView />
             </Layout>
           </ProtectedRoute>
         }

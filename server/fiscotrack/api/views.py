@@ -76,7 +76,6 @@ class ExpenseDetail(generics.RetrieveUpdateDestroyAPIView):
         return Expense.objects.filter(user=self.request.user)
 
 
-
 class CategoryListCreate(generics.ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
