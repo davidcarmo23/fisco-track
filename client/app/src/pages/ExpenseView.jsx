@@ -5,6 +5,8 @@ import api from '../api';
 import DynamicTab from "../Components/Global_Layout/DynamicTab";
 import { Card, CardHeader, CardContent, CardActions, Typography, Chip, IconButton, Box } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
+import GenericModalForm from "../Components/GenericModalForm";
+import { expenseModalConfig } from "../Components/Hooks/ModalConfigurations";
 
 function ExpenseView() {
   const { id } = useParams();
@@ -12,11 +14,13 @@ function ExpenseView() {
 
   const [expense, setExpense] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
       api.get(`/api/expenses/${id}/`)
         .then(res => {
+          console.log(res.data);
           setExpense(res.data);
           setLoading(false);
         })
@@ -26,6 +30,25 @@ function ExpenseView() {
         });
     }
   }, [id, navigate]);
+
+  const handleOpenModal = () => {
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+  };
+
+  const getExpense = (id) => {
+    api.get(`api/expense/${id}`)
+      .then(res => {
+        setExpense(res.data)
+      })
+      .catch(res => {
+        alert("Error retrieving expense!")
+      })
+  }
+
 
   if (loading) return <div>Loading...</div>;
   if (!expense) return <div>Expense not found</div>;
@@ -49,7 +72,7 @@ function ExpenseView() {
               <Typography variant="h6" color="primary">
                 Expense #{expense.id}
               </Typography>
-              <Typography variant="subtitle2" sx={{ color: `${expense.category.color}` }}>{expense.category.title}</Typography>
+              <Typography variant="subtitle2" sx={{ color: `${expense.category_details.color}` }}>{expense.category_details.title}</Typography>
               <Typography color="text.primary">{expense.title}</Typography>
             </Box>
 
@@ -58,7 +81,7 @@ function ExpenseView() {
               <Typography variant="body2" color="text.primary">
                 {expense.date}
               </Typography>
-              <IconButton color="primary" onClick={() => onEdit(expense.id)}>
+              <IconButton color="primary" onClick={() => handleOpenModal(expense.id)}>
                 <Edit />
               </IconButton>
               <IconButton color="error" onClick={() => onDelete(expense.id)}>
@@ -76,6 +99,14 @@ function ExpenseView() {
 
         </CardContent>
       </Card>
+
+      <GenericModalForm
+        open={modalOpen}
+        onClose={handleCloseModal}
+        onSuccess={getExpense}
+        itemToEdit={expense}
+        config={expenseModalConfig}
+      />
 
     </>
   );

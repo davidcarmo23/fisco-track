@@ -1,16 +1,24 @@
 import ReceiptIcon from "@mui/icons-material/Receipt";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import FolderIcon from '@mui/icons-material/Folder';
+import PaymentsIcon from '@mui/icons-material/Payments';
 import { Box, List, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
 import { useState } from 'react';
 import InvoicesDatatable from '../Datatables/InvoicesDatatable';
 import ReceiptsDatatable from '../Datatables/ReceiptsDatatable';
+import ExpensesDatatable from "../Datatables/ExpensesDatatable";
 
 function DynamicTab({ currEl, parentId = null }) {
     // State para controlar qual tab está ativa
-    const [activeTab, setActiveTab] = useState('invoices'); // Default para primeira tab
+    const [activeTab, setActiveTab] = useState('');
 
     const TabMapping = {
+        "UserProfile": [
+            { key: "expenses", label: "Expenses", icon: <PaymentsIcon /> },
+            { key: "invoices", label: "Invoices", icon: <InsertDriveFileIcon /> },
+            { key: "receipts", label: "Receipts", icon: <ReceiptIcon /> },
+            { key: "documents", label: "Documents", icon: <FolderIcon /> },
+        ],
         "Expenses": [
             { key: "invoices", label: "Invoices", icon: <InsertDriveFileIcon /> },
             { key: "receipts", label: "Receipts", icon: <ReceiptIcon /> },
@@ -28,6 +36,8 @@ function DynamicTab({ currEl, parentId = null }) {
     // Função para renderizar o conteúdo baseado na tab ativa
     const renderTabContent = () => {
         switch (activeTab) {
+            case 'expenses':
+                return <ExpensesDatatable userId={parentId} showAddButton={true} />;
             case 'invoices':
                 return <InvoicesDatatable expenseId={parentId} showAddButton={true} />;
             case 'receipts':

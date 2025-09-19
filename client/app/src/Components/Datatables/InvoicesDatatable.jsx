@@ -122,7 +122,7 @@ function InvoicesDatatable({
                 </Typography>
             )
         },
-        {
+        ...(!expenseId ? [{
             field: 'expense',
             headerName: 'Expense',
             width: 250,
@@ -140,11 +140,12 @@ function InvoicesDatatable({
                     {params.row.expense_details.title}
                 </Typography>
             )
-        },
+        }] : []),
         {
             field: 'date',
             headerName: 'Date',
             width: 150,
+            flex: 1,
             renderCell: (params) => {
                 if (!params.row?.date) return '-';
                 return new Date(params.row.date).toLocaleDateString("pt-PT");
@@ -154,6 +155,7 @@ function InvoicesDatatable({
             field: 'category_details',
             headerName: 'Category',
             width: 180,
+            flex: 1,
             renderCell: (params) => {
                 const category = params.row?.category_details;
                 if (!category) return '-';
@@ -168,6 +170,7 @@ function InvoicesDatatable({
             field: 'value',
             headerName: 'Value',
             width: 150,
+            flex: 1,
             align: 'right',
             renderCell: (params) => {
                 const value = params.row?.value;

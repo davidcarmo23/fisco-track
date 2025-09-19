@@ -75,11 +75,6 @@ function ExpensesDatatable({
         setExpenseToEdit(null);
     };
 
-    const handleModalSuccess = () => {
-        refetch(); // Recarrega a lista após criar/editar
-        handleCloseModal();
-    };
-
     const headerActions = showAddButton ? (
         <Stack direction="row" spacing={1}>
             <Button

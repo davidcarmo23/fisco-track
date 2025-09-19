@@ -126,12 +126,13 @@ function ReceiptsDatatable({
             field: 'date',
             headerName: 'Date',
             width: 150,
+            flex: 1,
             renderCell: (params) => {
                 if (!params.row?.date) return '-';
                 return new Date(params.row.date).toLocaleDateString("pt-PT");
             }
         },
-        {
+        ...(!invoiceId ? [{
             field: 'invoice',
             headerName: 'Invoice',
             width: 200,
@@ -149,20 +150,22 @@ function ReceiptsDatatable({
                     Invoice #{params.row.invoice_details.id}
                 </Typography>
             )
-        },
-        {
+        }] : []),
+        ...(!invoiceId ? [{
             field: 'invoice_date',
             headerName: 'Invoice Date',
             width: 150,
+            flex: 1,
             renderCell: (params) => {
                 if (!params.row?.invoice_details.date) return '-';
                 return new Date(params.row.invoice_details.date).toLocaleDateString("pt-PT");
             }
-        },
+        }] : []),
         {
             field: 'value',
             headerName: 'Value',
             width: 150,
+            flex: 1,
             align: 'right',
             renderCell: (params) => {
                 const value = params.row?.value;
