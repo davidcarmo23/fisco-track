@@ -102,7 +102,6 @@ function InvoicesDatatable({
     ) : null;
 
     const columns = [
-        { field: 'id', headerName: 'ID', width: 80 },
         {
             field: 'title',
             headerName: 'Title',
@@ -118,7 +117,26 @@ function InvoicesDatatable({
                         '&:hover': { textDecoration: 'underline' }
                     }}
                 >
-                    {params.row.title}
+                    Invoice #{params.row.id}
+                </Typography>
+            )
+        },
+        {
+            field: 'expense',
+            headerName: 'Expense',
+            width: 250,
+            flex: 1,
+            renderCell: (params) => (
+                <Typography
+                    component={NavLink}
+                    to={`/expenses/view/${params.row.expense_details.id}`}
+                    sx={{
+                        textDecoration: 'none',
+                        color: 'primary.main',
+                        '&:hover': { textDecoration: 'underline' }
+                    }}
+                >
+                    {params.row.expense_details.title}
                 </Typography>
             )
         },
@@ -154,17 +172,6 @@ function InvoicesDatatable({
                 const value = params.row?.value;
                 if (value == null) return '0.00 €';
                 return `${parseFloat(value).toFixed(2)} €`;
-            }
-        },
-        {
-            field: 'total_received',
-            headerName: 'Paid',
-            width: 150,
-            align: 'right',
-            renderCell: (params) => {
-                const totalReceived = params.row?.total_received;
-                if (totalReceived == null) return '0.00 €';
-                return `${parseFloat(totalReceived).toFixed(2)} €`;
             }
         },
         ...(showEditActions ? [{

@@ -22,15 +22,20 @@ class GetUserView(generics.RetrieveAPIView):
 class InvoiceListCreate(generics.ListCreateAPIView):
     serializer_class = InvoiceSerializer
     permission_classes = [IsAuthenticated]
-
+    
     def get_queryset(self):
         user = self.request.user
-        return Invoice.objects.filter(user= user)
+        queryset = Invoice.objects.filter(expense__user=user)\
+                                 .select_related('expense__category')
+        
+        expense_id = self.request.query_params.get('expense_id', None)
+        if expense_id:
+            queryset = queryset.filter(expense_id=expense_id)
+           
+        return queryset
+   
     def perform_create(self, serializer):
-        if serializer.is_valid():
-            serializer.save(user=self.request.user)
-        else:
-            print(serializer.errors)
+        serializer.save()
 
 class InvoiceDelete(generics.DestroyAPIView):
     serializer_class = InvoiceSerializer
@@ -59,6 +64,36 @@ class ExpenseListCreate(generics.ListCreateAPIView):
             print("Error message:", str(e))
             raise
 
+class ReceiptListCreate(generics.ListCreateAPIView):
+    serializer_class = ReceiptSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        user = self.request.user
+        # Join: Receipt -> Invoice -> Expense -> User
+        queryset = Receipt.objects.filter(invoice__expense__user=user)
+        
+        # Filtros opcionais
+        invoice_id = self.request.query_params.get('invoice_id', None)
+        if invoice_id:
+            queryset = queryset.filter(invoice_id=invoice_id)
+            
+        expense_id = self.request.query_params.get('expense_id', None)
+        if expense_id:
+            queryset = queryset.filter(invoice__expense_id=expense_id)
+            
+        return queryset
+   
+    def perform_create(self, serializer):
+        print("Request data:", self.request.data)
+        print("Serializer validated data:", serializer.validated_data)
+        try:
+            serializer.save()
+        except Exception as e:
+            print("Error type:", type(e))
+            print("Error message:", str(e))
+            raise
+
 class ExpenseDelete(generics.DestroyAPIView):
     serializer_class = ExpenseSerializer
     permission_classes = [IsAuthenticated]
@@ -82,17 +117,11 @@ class CategoryListCreate(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
 
-class ReceiptListCreate(generics.ListCreateAPIView):
-    queryset = Receipt.objects.all()
-    serializer_class = ReceiptSerializer
-    permission_classes = [IsAuthenticated]
-
 
 class InvoiceDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Invoice.objects.all()
     serializer_class = InvoiceSerializer
     permission_classes = [IsAuthenticated]
-
 
 
 class CategoryDetail(generics.RetrieveUpdateDestroyAPIView):

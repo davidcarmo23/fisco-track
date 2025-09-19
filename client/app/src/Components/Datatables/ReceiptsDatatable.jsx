@@ -102,11 +102,10 @@ function ReceiptsDatatable({
     ) : null;
 
     const columns = [
-        { field: 'id', headerName: 'ID', width: 80 },
         {
             field: 'title',
             headerName: 'Title',
-            width: 250,
+            width: 200,
             flex: 1,
             renderCell: (params) => (
                 <Typography
@@ -118,7 +117,7 @@ function ReceiptsDatatable({
                         '&:hover': { textDecoration: 'underline' }
                     }}
                 >
-                    {params.row.title}
+                    Receipt #{params.row.id}
                 </Typography>
             )
         },
@@ -132,17 +131,31 @@ function ReceiptsDatatable({
             }
         },
         {
-            field: 'category_details',
-            headerName: 'Category',
-            width: 180,
+            field: 'invoice',
+            headerName: 'Invoice',
+            width: 200,
+            flex: 1,
+            renderCell: (params) => (
+                <Typography
+                    component={NavLink}
+                    to={`/invoices/view/${params.row.invoice_details.id}`}
+                    sx={{
+                        textDecoration: 'none',
+                        color: 'primary.main',
+                        '&:hover': { textDecoration: 'underline' }
+                    }}
+                >
+                    Invoice #{params.row.invoice_details.id}
+                </Typography>
+            )
+        },
+        {
+            field: 'invoice_date',
+            headerName: 'Invoice Date',
+            width: 150,
             renderCell: (params) => {
-                const category = params.row?.category_details;
-                if (!category) return '-';
-                return (
-                    <span style={{ color: category.color || '#000' }}>
-                        {category.title || 'No title'}
-                    </span>
-                );
+                if (!params.row?.invoice_details.date) return '-';
+                return new Date(params.row.invoice_details.date).toLocaleDateString("pt-PT");
             }
         },
         {
@@ -154,17 +167,6 @@ function ReceiptsDatatable({
                 const value = params.row?.value;
                 if (value == null) return '0.00 €';
                 return `${parseFloat(value).toFixed(2)} €`;
-            }
-        },
-        {
-            field: 'total_received',
-            headerName: 'Paid',
-            width: 150,
-            align: 'right',
-            renderCell: (params) => {
-                const totalReceived = params.row?.total_received;
-                if (totalReceived == null) return '0.00 €';
-                return `${parseFloat(totalReceived).toFixed(2)} €`;
             }
         },
         ...(showEditActions ? [{

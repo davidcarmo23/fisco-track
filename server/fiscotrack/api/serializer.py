@@ -4,6 +4,7 @@ from .models import Invoice,Receipt,Category,Expense
 
 
 class ReceiptSerializer(serializers.ModelSerializer):
+    invoice_details = serializers.SerializerMethodField(read_only=True)
     class Meta:
         model = Receipt
         fields = '__all__'
@@ -22,6 +23,14 @@ class ReceiptSerializer(serializers.ModelSerializer):
             )
         return data
     
+    def get_invoice_details(self, obj):
+        if obj.invoice:
+            return {
+                'id': obj.invoice.id,
+                'date': obj.invoice.date,
+            }
+        return None
+    
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -29,13 +38,29 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class InvoiceSerializer(serializers.ModelSerializer):
-    total_received = serializers.FloatField(read_only=True)
-    is_paid = serializers.BooleanField(read_only=True)
-    receipts = ReceiptSerializer(many=True, read_only=True)
+    category_details = serializers.SerializerMethodField(read_only=True)
+    expense_details = serializers.SerializerMethodField(read_only=True) 
     
     class Meta:
         model = Invoice
-        fields = '__all__'
+        fields = ['id', 'date', 'value', 'expense', 'category_details', 'expense_details']
+    
+    def get_category_details(self, obj):
+        if obj.expense and obj.expense.category:
+            return {
+                'id': obj.expense.category.id,
+                'title': obj.expense.category.title,
+                'color': obj.expense.category.color,
+            }
+        return None
+    
+    def get_expense_details(self, obj):
+        if obj.expense:
+            return {
+                'id': obj.expense.id,
+                'title': obj.expense.title,
+            }
+        return None
 
 class ExpenseSerializer(serializers.ModelSerializer):
     category_details = CategorySerializer(source='category', read_only=True)
