@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Paper} from "@mui/material";
+import { Paper } from "@mui/material";
 
-import ExpenseModalForm from "../Components/ExpenseModalForm";
 import ExpensesDatatable from '../Components/Datatables/ExpensesDatatable'
+import GenericModalForm from "../Components/GenericModalForm";
+import { expenseModalConfig } from "../Components/Hooks/ModalConfigurations";
 
 function Expenses() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -16,12 +17,12 @@ function Expenses() {
       {/* DataTable */}
       <ExpensesDatatable showAddButton={true} />
 
-      {/* Modal separado para criar da página principal */}
-      <ExpenseModalForm
+      <GenericModalForm
         open={modalOpen}
         onClose={handleCloseModal}
-        getExpenses={() => window.location.reload()} // implementar refetch
+        config={expenseModalConfig}
       />
+
     </Paper>
   );
 }

@@ -45,6 +45,20 @@ class InvoiceSerializer(serializers.ModelSerializer):
         model = Invoice
         fields = ['id', 'date', 'value', 'expense', 'category_details', 'expense_details']
     
+    def validate(self, data):
+        expense = data['expense']
+        value = data['value']
+
+        already_received = expense.total_received
+        if self.instance:
+            already_received -= self.instance.value
+
+        if already_received + value > expense.value:
+            raise serializers.ValidationError(
+                f"Invoice total exceeded: max {expense.value}, attempted {already_received + value}"
+            )
+        return data
+    
     def get_category_details(self, obj):
         if obj.expense and obj.expense.category:
             return {

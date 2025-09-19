@@ -1,8 +1,9 @@
 import { useState } from "react";
-import ExpenseModalForm from "../Components/ExpenseModalForm";
 import { Paper } from "@mui/material";
 import InvoicesDatatable from "../Components/Datatables/InvoicesDatatable";
-
+import GenericModalForm from "../Components/GenericModalForm";
+import { invoiceModalConfig } from "../Components/Hooks/ModalConfigurations";
+import api from "../api";
 function Invoices() {
     const [modalOpen, setModalOpen] = useState(false);
 
@@ -16,10 +17,10 @@ function Invoices() {
             <InvoicesDatatable showAddButton={true} />
 
             {/* Modal separado para criar da página principal */}
-            <ExpenseModalForm
+            <GenericModalForm 
                 open={modalOpen}
                 onClose={handleCloseModal}
-                getInvoices={() => window.location.reload()} // implementar refetch
+                config={invoiceModalConfig}
             />
         </Paper>
     );

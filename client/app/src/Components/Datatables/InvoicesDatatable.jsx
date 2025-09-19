@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react';
 import { useFilteredList } from '../Hooks/FilteredList';
 import DataTableBase from './DatatableBase';
-import ExpenseModalForm from '../ExpenseModalForm';
+import GenericModalForm from '../GenericModalForm';
+import { invoiceModalConfig } from '../Hooks/ModalConfigurations';
 import { IconButton, Box, Button, Typography, Stack } from '@mui/material';
 import { Edit, Delete, Add } from '@mui/icons-material';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
@@ -201,11 +202,12 @@ function InvoicesDatatable({
             />
 
             {/* Modal gerido internamente */}
-            <ExpenseModalForm
+            <GenericModalForm
                 open={modalOpen}
                 onClose={handleCloseModal}
-                getExpenses={handleModalSuccess}
-                invoiceToEdit={invoiceToEdit}
+                onSuccess={refetch}
+                itemToEdit={invoiceToEdit}
+                config={invoiceModalConfig}
             />
         </>
     );

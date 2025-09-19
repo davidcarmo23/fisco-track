@@ -1,5 +1,6 @@
 import { useState } from "react";
-import ExpenseModalForm from "../Components/ExpenseModalForm";
+import GenericModalForm from '../Components/GenericModalForm'
+import { receiptModalConfig } from '../Components/Hooks/ModalConfigurations';
 import { Paper } from "@mui/material";
 import ReceiptsDatatable from "../Components/Datatables/ReceiptsDatatable";
 
@@ -15,11 +16,10 @@ function Receipts() {
             {/* DataTable */}
             <ReceiptsDatatable showAddButton={true} />
 
-            {/* Modal separado para criar da página principal */}
-            <ExpenseModalForm
+            <GenericModalForm
                 open={modalOpen}
                 onClose={handleCloseModal}
-                getReceipts={() => window.location.reload()} // implementar refetch
+                config={receiptModalConfig}
             />
         </Paper>
     );

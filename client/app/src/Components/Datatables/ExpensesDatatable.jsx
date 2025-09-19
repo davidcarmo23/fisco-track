@@ -1,12 +1,15 @@
 import { useCallback, useState } from 'react';
 import { useFilteredList } from '../Hooks/FilteredList';
 import DataTableBase from './DatatableBase';
-import ExpenseModalForm from '../ExpenseModalForm';
+import GenericModalForm from '../GenericModalForm';
+import { expenseModalConfig } from '../Hooks/ModalConfigurations';
+import api from '../../api';
+
 import { IconButton, Box, Button, Typography, Stack } from '@mui/material';
 import { Edit, Delete, Add } from '@mui/icons-material';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import { NavLink } from 'react-router-dom';
-import api from '../../api';
+
 
 const ActionButtons = ({ expense, onEdit, onDelete }) => (
     <Box sx={{ display: 'flex', gap: 1 }}>
@@ -188,12 +191,12 @@ function ExpensesDatatable({
                 actions={headerActions}
             />
 
-            {/* Modal gerido internamente */}
-            <ExpenseModalForm
+            <GenericModalForm
                 open={modalOpen}
                 onClose={handleCloseModal}
-                getExpenses={handleModalSuccess}
-                expenseToEdit={expenseToEdit}
+                onSuccess={refetch}
+                itemToEdit={expenseToEdit}
+                config={expenseModalConfig}
             />
         </>
     );
