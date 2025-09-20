@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import ProtectedRoute from "./Components/Global_Layout/ProtectedRoute";
 import Layout from "./Components/Global_Layout/Layout";
+
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Expenses from "./pages/Expenses";
@@ -8,7 +9,10 @@ import Receipts from "./pages/Receipts";
 import Invoices from "./pages/Invoices";
 import NotFound from "./pages/NotFound";
 import Register from "./pages/Register";
+
 import ExpenseView from "./pages/ExpenseView"
+import InvoiceView from "./pages/InvoiceView";
+
 import { ThemeProvider } from "@mui/material/styles";
 import theme from "./styles/theme";
 
@@ -74,7 +78,7 @@ function AppContent() {
           </ProtectedRoute>
         }
       />
-      {/* <Route
+      <Route
         path="/invoices/view/:id"
         element={
           <ProtectedRoute>
@@ -83,7 +87,7 @@ function AppContent() {
             </Layout>
           </ProtectedRoute>
         }
-      /> */}
+      />
 
       <Route
         path="/receipts"
@@ -95,16 +99,6 @@ function AppContent() {
           </ProtectedRoute>
         }
       />
-      {/* <Route
-        path="/receipts/view/:id"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <ReceiptView />
-            </Layout>
-          </ProtectedRoute>
-        }
-      /> */}
 
       {/* Fallback */}
       <Route path="*" element={<NotFound />} />
