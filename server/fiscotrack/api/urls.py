@@ -4,7 +4,8 @@ from .views import (
     ExpenseListCreate, ExpenseDelete, ExpenseDetail,
     CategoryListCreate, CategoryDetail,
     ReceiptListCreate, ReceiptDetail,
-    GetUserView
+    GetUserView,
+    preview_excel_import, import_excel_data, get_import_template
 )
 
 urlpatterns = [
@@ -21,4 +22,8 @@ urlpatterns = [
 
     path('receipts/', ReceiptListCreate.as_view(), name='receipt-list-create'),
     path('receipts/<int:pk>/', ReceiptDetail.as_view(), name='receipt-detail'),
+
+    path('import/preview/', preview_excel_import, name='import-preview'),
+    path('import/execute/', import_excel_data, name='import-execute'),
+    path('import/template/', get_import_template, name='import-template'),
 ]

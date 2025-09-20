@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useFilteredList } from '../Hooks/FilteredList';
 import DataTableBase from './DatatableBase';
 import GenericModalForm from '../GenericModalForm';
+import GenericExcelImportModal from '../GenericExcelImportModal';
 import { receiptModalConfig } from '../Hooks/ModalConfigurations';
 import { IconButton, Box, Button, Typography, Stack } from '@mui/material';
 import { Edit, Delete, Add } from '@mui/icons-material';
@@ -43,6 +44,7 @@ function ReceiptsDatatable({
     // Estados do modal (movidos para cá)
     const [modalOpen, setModalOpen] = useState(false);
     const [receiptToEdit, setInvoiceToEdit] = useState(null);
+    const [importModalOpen, setImportModalOpen] = useState(false);
 
     const deleteInvoice = (id) => {
         if (window.confirm('Are you sure you want to delete this receipt?')) {
@@ -89,6 +91,7 @@ function ReceiptsDatatable({
                 variant="contained"
                 color="secondary"
                 startIcon={<FileUploadIcon />}
+                onClick={() => setImportModalOpen(true)}
             >
                 Import
             </Button>
@@ -205,6 +208,16 @@ function ReceiptsDatatable({
                 onSuccess={refetch}
                 itemToEdit={receiptToEdit}
                 config={receiptModalConfig}
+            />
+
+            <GenericExcelImportModal
+                open={importModalOpen}
+                onClose={() => setImportModalOpen(false)}
+                onSuccess={(entityType) => {
+                    refetch();
+                    console.log(`${entityType} import completed`);
+                }}
+                defaultEntityType="receipt"
             />
         </>
     );

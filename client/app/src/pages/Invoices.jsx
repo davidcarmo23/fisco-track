@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Paper } from "@mui/material";
 import InvoicesDatatable from "../Components/Datatables/InvoicesDatatable";
 import GenericModalForm from "../Components/GenericModalForm";
+import GenericExcelImportModal from "../Components/GenericExcelImportModal";
 import { invoiceModalConfig } from "../Components/Hooks/ModalConfigurations";
 import api from "../api";
 function Invoices() {
@@ -22,6 +23,7 @@ function Invoices() {
                 onClose={handleCloseModal}
                 config={invoiceModalConfig}
             />
+            <GenericExcelImportModal defaultEntityType="invoice" />
         </Paper>
     );
 }

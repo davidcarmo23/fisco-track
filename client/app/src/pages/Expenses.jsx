@@ -3,6 +3,7 @@ import { Paper } from "@mui/material";
 
 import ExpensesDatatable from '../Components/Datatables/ExpensesDatatable'
 import GenericModalForm from "../Components/GenericModalForm";
+import GenericExcelImportModal from "../Components/GenericExcelImportModal";
 import { expenseModalConfig } from "../Components/Hooks/ModalConfigurations";
 
 function Expenses() {
@@ -23,6 +24,7 @@ function Expenses() {
         config={expenseModalConfig}
       />
 
+      <GenericExcelImportModal defaultEntityType="expense" />
     </Paper>
   );
 }

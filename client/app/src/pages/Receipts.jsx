@@ -1,5 +1,6 @@
 import { useState } from "react";
 import GenericModalForm from '../Components/GenericModalForm'
+import GenericExcelImportModal from "../Components/GenericExcelImportModal";
 import { receiptModalConfig } from '../Components/Hooks/ModalConfigurations';
 import { Paper } from "@mui/material";
 import ReceiptsDatatable from "../Components/Datatables/ReceiptsDatatable";
@@ -21,6 +22,7 @@ function Receipts() {
                 onClose={handleCloseModal}
                 config={receiptModalConfig}
             />
+            <GenericExcelImportModal defaultEntityType="receipt" />
         </Paper>
     );
 }

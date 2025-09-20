@@ -3,9 +3,9 @@ from django.contrib.auth.models import User
 from .models import Invoice, Receipt, Category, Expense
 
 class ReceiptSerializer(serializers.ModelSerializer):
-    invoice_details = serializers.ReadOnlyField(source='invoice_details')
-    category_details = serializers.ReadOnlyField(source='category_details')
-    expense_details = serializers.ReadOnlyField(source='expense_details')
+    invoice_details = serializers.ReadOnlyField()
+    category_details = serializers.ReadOnlyField()
+    expense_details = serializers.ReadOnlyField()
     
     class Meta:
         model = Receipt
@@ -31,8 +31,8 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class InvoiceSerializer(serializers.ModelSerializer):
-    category_details = serializers.ReadOnlyField(source='category_details')
-    expense_details = serializers.ReadOnlyField(source='expense_details')
+    category_details = serializers.ReadOnlyField()
+    expense_details = serializers.ReadOnlyField()
     total_received = serializers.ReadOnlyField()
     is_paid = serializers.ReadOnlyField()
     

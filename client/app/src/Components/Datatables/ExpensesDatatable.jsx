@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useFilteredList } from '../Hooks/FilteredList';
 import DataTableBase from './DatatableBase';
 import GenericModalForm from '../GenericModalForm';
+import GenericExcelImportModal from '../GenericExcelImportModal';
 import { expenseModalConfig } from '../Hooks/ModalConfigurations';
 import api from '../../api';
 
@@ -40,6 +41,7 @@ function ExpensesDatatable({
     // Estados do modal (movidos para cá)
     const [modalOpen, setModalOpen] = useState(false);
     const [expenseToEdit, setExpenseToEdit] = useState(null);
+    const [importModalOpen, setImportModalOpen] = useState(false);
 
     const deleteExpense = (id) => {
         if (window.confirm('Are you sure you want to delete this expense?')) {
@@ -81,6 +83,7 @@ function ExpensesDatatable({
                 variant="contained"
                 color="secondary"
                 startIcon={<FileUploadIcon />}
+                onClick={() => setImportModalOpen(true)}
             >
                 Import
             </Button>
@@ -192,6 +195,16 @@ function ExpensesDatatable({
                 onSuccess={refetch}
                 itemToEdit={expenseToEdit}
                 config={expenseModalConfig}
+            />
+
+            <GenericExcelImportModal
+                open={importModalOpen}
+                onClose={() => setImportModalOpen(false)}
+                onSuccess={(entityType) => {
+                    refetch();
+                    console.log(`${entityType} import completed`);
+                }}
+                defaultEntityType="expense"
             />
         </>
     );

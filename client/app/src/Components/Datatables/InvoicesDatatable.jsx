@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useFilteredList } from '../Hooks/FilteredList';
 import DataTableBase from './DatatableBase';
 import GenericModalForm from '../GenericModalForm';
+import GenericExcelImportModal from '../GenericExcelImportModal';
 import { invoiceModalConfig } from '../Hooks/ModalConfigurations';
 import { IconButton, Box, Button, Typography, Stack } from '@mui/material';
 import { Edit, Delete, Add } from '@mui/icons-material';
@@ -43,6 +44,7 @@ function InvoicesDatatable({
     // Estados do modal (movidos para cá)
     const [modalOpen, setModalOpen] = useState(false);
     const [invoiceToEdit, setInvoiceToEdit] = useState(null);
+    const [importModalOpen, setImportModalOpen] = useState(false);
 
     const deleteInvoice = (id) => {
         if (window.confirm('Are you sure you want to delete this invoice?')) {
@@ -89,6 +91,7 @@ function InvoicesDatatable({
                 variant="contained"
                 color="secondary"
                 startIcon={<FileUploadIcon />}
+                onClick={() => setImportModalOpen(true)}
             >
                 Import
             </Button>
@@ -104,7 +107,7 @@ function InvoicesDatatable({
 
     const columns = [
         {
-            field: 'title',
+            field: 'id',
             headerName: 'Title',
             width: 250,
             flex: 1,
@@ -211,6 +214,16 @@ function InvoicesDatatable({
                 onSuccess={refetch}
                 itemToEdit={invoiceToEdit}
                 config={invoiceModalConfig}
+            />
+
+            <GenericExcelImportModal
+                open={importModalOpen}
+                onClose={() => setImportModalOpen(false)}
+                onSuccess={(entityType) => {
+                    refetch()
+                    console.log(`${entityType} import completed`);
+                }}
+                defaultEntityType="invoice"
             />
         </>
     );
