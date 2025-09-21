@@ -102,3 +102,55 @@ export const receiptModalConfig = {
         }
     ]
 };
+
+export const categoryModalConfig = {
+    entityName: "Category",
+    endpoint: "/api/categories/",
+    fields: [
+        {
+            key: "title",
+            type: "text",
+            label: "Title",
+            required: true
+        },
+        {
+            key: "color",
+            type: "text",
+            label: "Color",
+            required: true,
+        },
+        {
+            key: "priority",
+            type: "select",
+            label: "Priority",
+            required: true,
+            optionsKey: "priorities",
+            displayField: "id"
+        }
+    ],
+    dropdowns: [
+        {
+            key: "priorities",
+            endpoint: "/api/priorities/"
+        }
+    ]
+};
+
+export const priorityModalConfig = {
+    entityName: "Priority",
+    endpoint: "/api/priorities/",
+    fields: [
+        {
+            key: "title",
+            type: "text",
+            label: "Title",
+            required: true
+        },
+        {
+            key: "priority_value",
+            type: "number",
+            label: "Value",
+            required: true
+        }
+    ]
+};

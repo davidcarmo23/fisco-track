@@ -87,14 +87,14 @@ function ReceiptsDatatable({
 
     const headerActions = showAddButton ? (
         <Stack direction="row" spacing={1}>
-            <Button
+           {invoiceId && (<Button
                 variant="contained"
                 color="secondary"
                 startIcon={<FileUploadIcon />}
                 onClick={() => setImportModalOpen(true)}
             >
                 Import
-            </Button>
+            </Button>)}
             <Button
                 variant="contained"
                 startIcon={<Add />}

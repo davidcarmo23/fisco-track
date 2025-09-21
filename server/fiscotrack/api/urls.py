@@ -3,6 +3,7 @@ from .views import (
     InvoiceListCreate, InvoiceDelete, InvoiceDetail,
     ExpenseListCreate, ExpenseDelete, ExpenseDetail,
     CategoryListCreate, CategoryDetail,
+    PriorityListCreate, PriorityDetail,
     ReceiptListCreate, ReceiptDetail,
     GetUserView,
     preview_excel_import, import_excel_data, get_import_template
@@ -19,6 +20,9 @@ urlpatterns = [
 
     path('categories/', CategoryListCreate.as_view(), name='category-list-create'),
     path('categories/<int:pk>/', CategoryDetail.as_view(), name='category-detail'),
+    
+    path('priorities/', PriorityListCreate.as_view(), name='priority-list-create'),
+    path('priorities/<int:pk>/', PriorityDetail.as_view(), name='priority-detail'),
 
     path('receipts/', ReceiptListCreate.as_view(), name='receipt-list-create'),
     path('receipts/<int:pk>/', ReceiptDetail.as_view(), name='receipt-detail'),

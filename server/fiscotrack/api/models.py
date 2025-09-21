@@ -3,45 +3,29 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 import os
 
+class Priority(models.Model):
+    title = models.CharField(max_length=50)
+    priority_value = models.IntegerField()
+   
+    def __str__(self):
+        return self.title
+   
+    class Meta:
+        verbose_name_plural = "Priorities"
+        ordering = ['priority_value', 'title']
+        indexes = [
+            models.Index(fields=['priority_value']),
+            models.Index(fields=['title']),
+        ]
+        
 class Category(models.Model):
     title = models.CharField(max_length=50)
     color = models.CharField(max_length=15)
-    priority = models.IntegerField()
-    
+    priority = models.ForeignKey(Priority, on_delete=models.CASCADE, related_name="categories")
+   
     def __str__(self):
         return self.title
-    
-    @property
-    def category_details(self):
-        """Access category through invoice->expense for serializers"""
-        if self.invoice and self.invoice.expense and self.invoice.expense.category:
-            return {
-                'id': self.invoice.expense.category.id,
-                'title': self.invoice.expense.category.title,
-                'color': self.invoice.expense.category.color,
-            }
-        return None
-    
-    @property
-    def invoice_details(self):
-        """Invoice details for serializers"""
-        if self.invoice:
-            return {
-                'id': self.invoice.id,
-                'invoice_number': self.invoice.invoice_number or f"Invoice {self.invoice.id}",
-            }
-        return None
-    
-    @property
-    def expense_details(self):
-        """Expense details for serializers"""
-        if self.invoice and self.invoice.expense:
-            return {
-                'id': self.invoice.expense.id,
-                'title': self.invoice.expense.title,
-            }
-        return None
-    
+   
     class Meta:
         verbose_name_plural = "Categories"
         ordering = ['priority', 'title']
@@ -102,7 +86,6 @@ class Invoice(models.Model):
     
     @property
     def category_details(self):
-        """Access category through expense for serializers"""
         if self.expense and self.expense.category:
             return {
                 'id': self.expense.category.id,
@@ -113,7 +96,6 @@ class Invoice(models.Model):
     
     @property
     def expense_details(self):
-        """Expense details for serializers"""
         if self.expense:
             return {
                 'id': self.expense.id,
@@ -165,17 +147,14 @@ class Receipt(models.Model):
     
     @property
     def category_details(self):
-        """Access category through invoice->expense for serializers"""
         return self.invoice.expense.category if self.invoice and self.invoice.expense else None
     
     @property
     def invoice_details(self):
-        """Invoice details for serializers"""
         return self.invoice if self.invoice else None
     
     @property
     def expense_details(self):
-        """Expense details for serializers"""
         return self.invoice.expense if self.invoice and self.invoice.expense else None
     
     class Meta:
@@ -197,7 +176,7 @@ class Document(models.Model):
     ]
     
     file_name = models.CharField(max_length=150)
-    file_path = models.FileField(upload_to='documents/%Y/%m/')  # Organized by date
+    file_path = models.FileField(upload_to='documents/%Y/%m/')
     file_size = models.DecimalField(max_digits=10, decimal_places=2)
     mime_type = models.CharField(max_length=150)
     uploaded_at = models.DateTimeField(auto_now_add=True)

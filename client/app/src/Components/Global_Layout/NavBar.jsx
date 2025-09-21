@@ -24,6 +24,8 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import LogoutIcon from "@mui/icons-material/Logout";
+import CategoryIcon from '@mui/icons-material/Category';
+import LabelIcon from '@mui/icons-material/Label';
 
 const drawerWidth = 260;
 
@@ -43,6 +45,8 @@ function NavBar() {
     { to: "/expenses", label: "Expenses", icon: <ReceiptIcon /> },
     { to: "/invoices", label: "Invoices", icon: <InsertDriveFileIcon /> },
     { to: "/receipts", label: "Receipts", icon: <RequestQuoteIcon /> },
+    { to: "/categories", label: "Categories", icon: <CategoryIcon /> },
+    { to: "/priorities", label: "Priorities", icon: <LabelIcon /> },
   ];
 
   const secondaryLinks = [

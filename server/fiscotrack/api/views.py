@@ -4,13 +4,16 @@ from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth.models import User
 from django.shortcuts import render
-from .models import Invoice,Receipt,Category,Expense,Document
-from .serializer import InvoiceSerializer,ReceiptSerializer,CategorySerializer,ExpenseSerializer, UserSerializer
+from .models import Invoice,Receipt,Category,Expense,Document,Priority
+from .serializer import InvoiceSerializer,ReceiptSerializer,CategorySerializer,ExpenseSerializer, UserSerializer,PrioritySerializer
 import os
 import tempfile
 import pandas as pd
 import json
 from django.db import transaction
+import io
+from django.http import HttpResponse
+import random
 
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -23,6 +26,7 @@ class GetUserView(generics.RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
+
 
 class InvoiceListCreate(generics.ListCreateAPIView):
     serializer_class = InvoiceSerializer
@@ -50,7 +54,14 @@ class InvoiceDelete(generics.DestroyAPIView):
         user = self.request.user
         return Invoice.objects.filter(expense__user= user)
 
-
+class InvoiceDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = InvoiceSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return Invoice.objects.filter(expense__user=self.request.user)
+    
+    
 class ExpenseListCreate(generics.ListCreateAPIView):
     serializer_class = ExpenseSerializer
     permission_classes = [IsAuthenticated]
@@ -68,6 +79,33 @@ class ExpenseListCreate(generics.ListCreateAPIView):
             print("Error type:", type(e))
             print("Error message:", str(e))
             raise
+
+class ExpenseDelete(generics.DestroyAPIView):
+    serializer_class = ExpenseSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Expense.objects.filter(user= user)
+    
+class ExpenseDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ExpenseSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Expense.objects.filter(user=self.request.user)
+
+
+class CategoryListCreate(generics.ListCreateAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]
+
+class CategoryDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]
+
 
 class ReceiptListCreate(generics.ListCreateAPIView):
     serializer_class = ReceiptSerializer
@@ -99,42 +137,13 @@ class ReceiptListCreate(generics.ListCreateAPIView):
             print("Error message:", str(e))
             raise
 
-class ExpenseDelete(generics.DestroyAPIView):
-    serializer_class = ExpenseSerializer
+class ReceiptDelete(generics.DestroyAPIView):
+    serializer_class = ReceiptSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        return Expense.objects.filter(user= user)
-    
-class ExpenseDetail(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = ExpenseSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        return Expense.objects.filter(user=self.request.user)
-
-
-class CategoryListCreate(generics.ListCreateAPIView):
-    queryset = Category.objects.all()
-    serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticated]
-
-
-
-class InvoiceDetail(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = InvoiceSerializer
-    permission_classes = [IsAuthenticated]
-    
-    def get_queryset(self):
-        return Invoice.objects.filter(expense__user=self.request.user)
-
-
-class CategoryDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Category.objects.all()
-    serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticated]
-
+        return Receipt.objects.filter(expense__invoice__user= user)
 
 class ReceiptDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ReceiptSerializer
@@ -142,7 +151,18 @@ class ReceiptDetail(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return Receipt.objects.filter(expense__invoice__user=self.request.user)
+    
 
+class PriorityListCreate(generics.ListCreateAPIView):
+    queryset = Priority.objects.all()
+    serializer_class = PrioritySerializer
+    permission_classes = [IsAuthenticated]
+
+class PriorityDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Priority.objects.all()
+    serializer_class = PrioritySerializer
+    permission_classes = [IsAuthenticated]
+ 
 
 IMPORT_CONFIGS = {
     'expense': {
@@ -220,7 +240,7 @@ def preview_excel_import(request):
                 if entity_type == 'invoice':
                     related_data[field] = list(model.objects.filter(user=request.user).values('id', 'title'))
                 elif entity_type == 'receipt':
-                    related_data[field] = list(model.objects.filter(expense__user=request.user).values('id', 'invoice_number'))
+                    related_data[field] = list(model.objects.filter(invoice__expense__user=request.user).values('id', 'invoice_number'))
             else:
                 related_data[field] = list(model.objects.values('id', field_config['lookup_field']))
         
@@ -297,6 +317,11 @@ def import_excel_data(request):
         created_items = []
         errors = []
         
+        created_categories = []
+        created_categories_in_session = {}
+        category_last_id = 0
+        rand_color = lambda: random.randint(0,255)
+        
         with transaction.atomic():
             for index, row in df.iterrows():
                 try:
@@ -328,22 +353,53 @@ def import_excel_data(request):
                                     lookup_value = str(value).strip()
                                     model = field_config['model']
                                     lookup_field = field_config['lookup_field']
-                                    
-                                    if field_config.get('user_filter'):
-                                        if entity_type == 'invoice':
-                                            related_obj = model.objects.filter(
-                                                user=request.user, 
-                                                **{f'{lookup_field}__iexact': lookup_value}
-                                            ).first()
-                                        elif entity_type == 'receipt':
-                                            related_obj = model.objects.filter(
-                                                expense__user=request.user,
-                                                **{f'{lookup_field}__iexact': lookup_value}
-                                            ).first()
-                                    else:
+
+                                    if field == 'category' and model == Category:
                                         related_obj = model.objects.filter(
                                             **{f'{lookup_field}__iexact': lookup_value}
                                         ).first()
+                                        
+                                        if not related_obj:
+                                            # Check if we already created this category in this import session
+                                            if lookup_value.lower() in created_categories_in_session:
+                                                related_obj = created_categories_in_session[lookup_value.lower()]
+                                                print(f"Using category created earlier in this session: {lookup_value}")
+                                            else:
+                                                # Create new category
+                                                try:
+                                                    if category_last_id == 0:
+                                                        category_last_id = Category.objects.last().id
+                                                    
+                                                    related_obj = Category.objects.create(
+                                                        id= (category_last_id + 1),
+                                                        title=lookup_value,
+                                                        color='#%02X%02X%02X' % (rand_color(),rand_color(),rand_color()),
+                                                        priority=999
+                                                    )
+                                                    
+                                                    category_last_id += 1
+                                                    created_categories_in_session[lookup_value.lower()] = related_obj
+                                                    created_categories.append(lookup_value)
+                                                    print(f"Created new category: {lookup_value} with ID: {related_obj.id}")
+                                                except Exception as e:
+                                                    print(f"Error creating category '{lookup_value}': {e}")
+                                                    raise
+                                    else:
+                                        if field_config.get('user_filter'):
+                                            if entity_type == 'invoice':
+                                                related_obj = model.objects.filter(
+                                                    user=request.user, 
+                                                    **{f'{lookup_field}__iexact': lookup_value}
+                                                ).first()
+                                            elif entity_type == 'receipt':
+                                                related_obj = model.objects.filter(
+                                                    expense__user=request.user,
+                                                    **{f'{lookup_field}__iexact': lookup_value}
+                                                ).first()
+                                        else:
+                                            related_obj = model.objects.filter(
+                                                **{f'{lookup_field}__iexact': lookup_value}
+                                            ).first()
                                     
                                     if related_obj:
                                         item_data[field] = related_obj.id
@@ -384,6 +440,7 @@ def import_excel_data(request):
             'created_count': len(created_items),
             'error_count': len(errors),
             'created_items': created_items,
+            'created_categories': created_categories,
             'errors': errors,
             'document_id': document.id
         })
@@ -395,9 +452,7 @@ def import_excel_data(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_import_template(request):
-    import io
-    from django.http import HttpResponse
-    
+
     entity_type = request.GET.get('entity_type', 'expense')
     if entity_type not in IMPORT_CONFIGS:
         return Response({'error': 'Invalid entity type'}, status=status.HTTP_400_BAD_REQUEST)
@@ -410,7 +465,6 @@ def get_import_template(request):
             'Title': ['Office Supplies', 'Business Lunch', 'Software License'],
             'Date': ['2025-01-15', '2025-01-16', '2025-01-17'],
             'Value': [25.50, 45.00, 199.99],
-            'Category_ID': [1, 2, 3],
             'Category_Name': ['Office', 'Meals', 'Software']
         }
     elif entity_type == 'invoice':
@@ -426,7 +480,6 @@ def get_import_template(request):
             'Date': ['2025-01-20', '2025-01-21', '2025-01-22'],
             'Value': [1000.00, 500.00, 750.00],
             'Invoice_ID': [1, 2, 3],
-            'Invoice_Number': ['INV-001', 'INV-002', 'INV-003'],
             'Receipt_Number': ['REC-001', 'REC-002', 'REC-003']
         }
     

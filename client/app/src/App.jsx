@@ -15,6 +15,8 @@ import InvoiceView from "./pages/InvoiceView";
 
 import { ThemeProvider } from "@mui/material/styles";
 import theme from "./styles/theme";
+import Categories from "./pages/Categories";
+import Priorities from "./pages/Priorities";
 
 function AppContent() {
   const location = useLocation();
@@ -95,6 +97,28 @@ function AppContent() {
           <ProtectedRoute>
             <Layout>
               <Receipts />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/categories"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Categories />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/priorities"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Priorities />
             </Layout>
           </ProtectedRoute>
         }

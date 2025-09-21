@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Invoice, Receipt, Category, Expense
+from .models import Invoice, Receipt, Category, Expense, Priority
 
 class ReceiptSerializer(serializers.ModelSerializer):
     invoice_details = serializers.ReadOnlyField()
@@ -24,6 +24,11 @@ class ReceiptSerializer(serializers.ModelSerializer):
                 f"Invoice total exceeded: max {invoice.value}, attempted {already_received + value}"
             )
         return data
+    
+class PrioritySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Priority
+        fields = '__all__'
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
