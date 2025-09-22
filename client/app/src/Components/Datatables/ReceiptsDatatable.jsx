@@ -143,26 +143,35 @@ function ReceiptsDatatable({
             renderCell: (params) => (
                 <Typography
                     component={NavLink}
-                    to={`/invoices/view/${params.row.invoice_details.id}`}
+                    to={`/invoices/view/${params.row.invoice_details?.id}`}
                     sx={{
                         textDecoration: 'none',
                         color: 'primary.main',
                         '&:hover': { textDecoration: 'underline' }
                     }}
                 >
-                    Invoice #{params.row.invoice_details.id}
+                    {params.row.invoice_details?.invoice_number}
                 </Typography>
             )
         }] : []),
         ...(!parentId ? [{
-            field: 'invoice_date',
-            headerName: 'Invoice Date',
-            width: 150,
+            field: 'expense',
+            headerName: 'Expense',
+            width: 200,
             flex: 1,
-            renderCell: (params) => {
-                if (!params.row?.invoice_details.date) return '-';
-                return new Date(params.row.invoice_details.date).toLocaleDateString("pt-PT");
-            }
+            renderCell: (params) => (
+                <Typography
+                    component={NavLink}
+                    to={`/expenses/view/${params.row.expense_details?.id}`}
+                    sx={{
+                        textDecoration: 'none',
+                        color: 'primary.main',
+                        '&:hover': { textDecoration: 'underline' }
+                    }}
+                >
+                    {params.row.expense_details?.expense_number}
+                </Typography>
+            )
         }] : []),
         {
             field: 'amount',
@@ -176,7 +185,7 @@ function ReceiptsDatatable({
                 return `${parseFloat(value).toFixed(2)} €`;
             }
         },
-        [{
+        {
             field: 'actions',
             headerName: 'Actions',
             width: 120,
@@ -189,7 +198,7 @@ function ReceiptsDatatable({
                     onDelete={handleDelete}
                 />
             )
-        }]
+        }
     ];
 
     return (

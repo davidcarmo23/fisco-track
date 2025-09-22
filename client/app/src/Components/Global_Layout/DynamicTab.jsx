@@ -21,11 +21,11 @@ function DynamicTab({ currEl, parentId = null }) {
             { key: "documents", label: "Documents", icon: <FolderIcon /> },
         ],
         "Expenses": [
-            { key: "invoices", label: "Invoices", icon: <InsertDriveFileIcon /> },
             { key: "receipts", label: "Receipts", icon: <ReceiptIcon /> },
             { key: "documents", label: "Documents", icon: <FolderIcon /> },
         ],
         "Invoices": [
+            { key: "expenses", label: "Expenses", icon: <PaymentsIcon /> },
             { key: "receipts", label: "Receipts", icon: <ReceiptIcon /> },
             { key: "documents", label: "Documents", icon: <FolderIcon /> },
         ],
@@ -38,9 +38,9 @@ function DynamicTab({ currEl, parentId = null }) {
     const renderTabContent = () => {
         switch (activeTab) {
             case 'expenses':
-                return <ExpensesDatatable userId={parentId} showAddButton={true} />;
+                return <ExpensesDatatable invoiceId={parentId} showAddButton={true} />;
             case 'invoices':
-                return <InvoicesDatatable expenseId={parentId} showAddButton={true} />;
+                return <InvoicesDatatable showAddButton={true} />;
             case 'receipts':
                 return <ReceiptsDatatable parentId={parentId} context={currEl.toLowerCase()} />;
             case 'documents':

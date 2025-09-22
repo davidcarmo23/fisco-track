@@ -34,12 +34,8 @@ class InvoiceListCreate(generics.ListCreateAPIView):
     
     def get_queryset(self):
         user = self.request.user
-        queryset = Invoice.objects.filter(expense__user=user)\
-                                 .select_related('expense__category')
-        
-        expense_id = self.request.query_params.get('expense_id', None)
-        if expense_id:
-            queryset = queryset.filter(expense_id=expense_id)
+        queryset = Invoice.objects.filter(user=user)\
+                                 .select_related('category')
            
         return queryset
    
@@ -59,7 +55,7 @@ class InvoiceDetail(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        return Invoice.objects.filter(expense__user=self.request.user)
+        return Invoice.objects.filter(user=self.request.user)
     
     
 class ExpenseListCreate(generics.ListCreateAPIView):
@@ -68,7 +64,15 @@ class ExpenseListCreate(generics.ListCreateAPIView):
     
     def get_queryset(self):
         user = self.request.user
-        return Expense.objects.filter(user=user)
+    
+        queryset = Expense.objects.filter(user=user)\
+                                 .select_related('category')
+        
+        invoice_id = self.request.query_params.get('invoice_id', None)
+        if invoice_id:
+            queryset = queryset.filter(invoice_id=invoice_id)
+            
+        return queryset
     
     def perform_create(self, serializer):
         print("Request data:", self.request.data)
@@ -114,7 +118,7 @@ class ReceiptListCreate(generics.ListCreateAPIView):
     def get_queryset(self):
         user = self.request.user
         # Join: Receipt -> Invoice -> Expense -> User
-        queryset = Receipt.objects.filter(invoice__expense__user=user)
+        queryset = Receipt.objects.filter(user=user)
         
         # Filtros opcionais
         invoice_id = self.request.query_params.get('invoice_id', None)
@@ -123,7 +127,7 @@ class ReceiptListCreate(generics.ListCreateAPIView):
             
         expense_id = self.request.query_params.get('expense_id', None)
         if expense_id:
-            queryset = queryset.filter(invoice__expense_id=expense_id)
+            queryset = queryset.filter(expense_id=expense_id)
             
         return queryset
    
@@ -150,7 +154,7 @@ class ReceiptDetail(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Receipt.objects.filter(expense__invoice__user=self.request.user)
+        return Receipt.objects.filter(user=self.request.user)
     
 
 class PriorityListCreate(generics.ListCreateAPIView):
@@ -208,7 +212,7 @@ IMPORT_CONFIGS = {
     'expense': {
         'model': Expense,
         'serializer': ExpenseSerializer,
-        'required_fields': ['title', 'date', 'value', 'category'],
+        'required_fields': ['title', 'date', 'amount', 'category'],
         'optional_fields': [],
         'related_data': {
             'category': {'model': Category, 'lookup_field': 'title'}
@@ -217,7 +221,7 @@ IMPORT_CONFIGS = {
     'invoice': {
         'model': Invoice,
         'serializer': InvoiceSerializer,
-        'required_fields': ['date', 'value', 'expense'],
+        'required_fields': ['date', 'amount', 'expense'],
         'optional_fields': ['invoice_number'],
         'related_data': {
             'expense': {'model': Expense, 'lookup_field': 'title', 'user_filter': True}
@@ -226,7 +230,7 @@ IMPORT_CONFIGS = {
     'receipt': {
         'model': Receipt,
         'serializer': ReceiptSerializer,
-        'required_fields': ['date', 'value', 'invoice'],
+        'required_fields': ['date', 'amount', 'invoice'],
         'optional_fields': ['receipt_number'],
         'related_data': {
             'invoice': {'model': Invoice, 'lookup_field': 'invoice_number', 'user_filter': True}
@@ -278,11 +282,11 @@ def preview_excel_import(request):
             model = field_config['model']
             if field_config.get('user_filter') and hasattr(model, 'objects'):
                 if entity_type == 'invoice':
-                    related_data[field] = list(model.objects.filter(user=request.user).values('id', 'title'))
+                    related_data[field] = list(model.objects.filter(user=request.user).amounts('id', 'title'))
                 elif entity_type == 'receipt':
-                    related_data[field] = list(model.objects.filter(invoice__expense__user=request.user).values('id', 'invoice_number'))
+                    related_data[field] = list(model.objects.filter(invoice__expense__user=request.user).amounts('id', 'invoice_number'))
             else:
-                related_data[field] = list(model.objects.values('id', field_config['lookup_field']))
+                related_data[field] = list(model.objects.amounts('id', field_config['lookup_field']))
         
         return Response({
             'entity_type': entity_type,
@@ -373,37 +377,37 @@ def import_excel_data(request):
                     for field in all_fields:
                         excel_column = column_mapping.get(field)
                         if excel_column and excel_column in row:
-                            value = row[excel_column]
+                            amount = row[excel_column]
                             
                             # Handle different field types
                             if field in ['date']:
-                                if pd.isna(value):
+                                if pd.isna(amount):
                                     item_data[field] = None
                                 else:
-                                    item_data[field] = pd.to_datetime(value).date()
-                            elif field in ['value']:
-                                item_data[field] = float(value) if not pd.isna(value) else 0
+                                    item_data[field] = pd.to_datetime(amount).date()
+                            elif field in ['amount']:
+                                item_data[field] = float(amount) if not pd.isna(amount) else 0
                             elif field in config.get('related_data', {}):
                                 # Handle foreign key relationships
                                 field_config = config['related_data'][field]
-                                if isinstance(value, (int, float)) and not pd.isna(value):
-                                    item_data[field] = int(value)
+                                if isinstance(amount, (int, float)) and not pd.isna(amount):
+                                    item_data[field] = int(amount)
                                 else:
                                     # Try to find by lookup field
-                                    lookup_value = str(value).strip()
+                                    lookup_amount = str(amount).strip()
                                     model = field_config['model']
                                     lookup_field = field_config['lookup_field']
 
                                     if field == 'category' and model == Category:
                                         related_obj = model.objects.filter(
-                                            **{f'{lookup_field}__iexact': lookup_value}
+                                            **{f'{lookup_field}__iexact': lookup_amount}
                                         ).first()
                                         
                                         if not related_obj:
                                             # Check if we already created this category in this import session
-                                            if lookup_value.lower() in created_categories_in_session:
-                                                related_obj = created_categories_in_session[lookup_value.lower()]
-                                                print(f"Using category created earlier in this session: {lookup_value}")
+                                            if lookup_amount.lower() in created_categories_in_session:
+                                                related_obj = created_categories_in_session[lookup_amount.lower()]
+                                                print(f"Using category created earlier in this session: {lookup_amount}")
                                             else:
                                                 # Create new category
                                                 try:
@@ -412,41 +416,41 @@ def import_excel_data(request):
                                                     
                                                     related_obj = Category.objects.create(
                                                         id= (category_last_id + 1),
-                                                        title=lookup_value,
+                                                        title=lookup_amount,
                                                         color='#%02X%02X%02X' % (rand_color(),rand_color(),rand_color()),
                                                         priority=999
                                                     )
                                                     
                                                     category_last_id += 1
-                                                    created_categories_in_session[lookup_value.lower()] = related_obj
-                                                    created_categories.append(lookup_value)
-                                                    print(f"Created new category: {lookup_value} with ID: {related_obj.id}")
+                                                    created_categories_in_session[lookup_amount.lower()] = related_obj
+                                                    created_categories.append(lookup_amount)
+                                                    print(f"Created new category: {lookup_amount} with ID: {related_obj.id}")
                                                 except Exception as e:
-                                                    print(f"Error creating category '{lookup_value}': {e}")
+                                                    print(f"Error creating category '{lookup_amount}': {e}")
                                                     raise
                                     else:
                                         if field_config.get('user_filter'):
                                             if entity_type == 'invoice':
                                                 related_obj = model.objects.filter(
                                                     user=request.user, 
-                                                    **{f'{lookup_field}__iexact': lookup_value}
+                                                    **{f'{lookup_field}__iexact': lookup_amount}
                                                 ).first()
                                             elif entity_type == 'receipt':
                                                 related_obj = model.objects.filter(
                                                     expense__user=request.user,
-                                                    **{f'{lookup_field}__iexact': lookup_value}
+                                                    **{f'{lookup_field}__iexact': lookup_amount}
                                                 ).first()
                                         else:
                                             related_obj = model.objects.filter(
-                                                **{f'{lookup_field}__iexact': lookup_value}
+                                                **{f'{lookup_field}__iexact': lookup_amount}
                                             ).first()
                                     
                                     if related_obj:
                                         item_data[field] = related_obj.id
                                     else:
-                                        raise ValueError(f'{field.title()} not found: {value}')
+                                        raise ValueError(f'{field.title()} not found: {amount}')
                             else:
-                                item_data[field] = str(value) if not pd.isna(value) else ''
+                                item_data[field] = str(amount) if not pd.isna(amount) else ''
                     
                     serializer = config['serializer'](data=item_data)
                     if serializer.is_valid():
@@ -504,22 +508,23 @@ def get_import_template(request):
         template_data = {
             'Title': ['Office Supplies', 'Business Lunch', 'Software License'],
             'Date': ['2025-01-15', '2025-01-16', '2025-01-17'],
-            'Value': [25.50, 45.00, 199.99],
+            'Invoice_ID': [1, 2, 3],
+            'Amount': [25.50, 45.00, 199.99],
             'Category_Name': ['Office', 'Meals', 'Software']
         }
     elif entity_type == 'invoice':
         template_data = {
             'Date': ['2025-01-15', '2025-01-16', '2025-01-17'],
-            'Value': [1000.00, 500.00, 750.00],
-            'Expense_ID': [1, 2, 3],
+            'Amount': [1000.00, 500.00, 750.00],
             'Expense_Title': ['Office Supplies', 'Business Lunch', 'Software License'],
             'Invoice_Number': ['INV-001', 'INV-002', 'INV-003']
         }
     elif entity_type == 'receipt':
         template_data = {
             'Date': ['2025-01-20', '2025-01-21', '2025-01-22'],
-            'Value': [1000.00, 500.00, 750.00],
-            'Invoice_ID': [1, 2, 3],
+            'Amount': [1000.00, 500.00, 750.00],
+            'Parent_Id': [1, 2, 3],
+            'Parent_Type': ['expense','expense','invoice'],
             'Receipt_Number': ['REC-001', 'REC-002', 'REC-003']
         }
     
@@ -544,7 +549,7 @@ def get_import_template(request):
     output.seek(0)
     
     response = HttpResponse(
-        output.getvalue(),
+        output.getamount(),
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
     response['Content-Disposition'] = f'attachment; filename="{entity_type}_import_template.xlsx"'

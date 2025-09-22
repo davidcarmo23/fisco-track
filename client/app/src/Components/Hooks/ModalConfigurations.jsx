@@ -23,9 +23,9 @@ export const expenseModalConfig = {
             displayField: "title"
         },
         {
-            key: "value",
+            key: "amount",
             type: "number",
-            label: "Value (€)",
+            label: "Amount (€)",
             required: true
         }
     ],
@@ -56,9 +56,9 @@ export const invoiceModalConfig = {
             displayField: "title"
         },
         {
-            key: "value",
+            key: "amount",
             type: "number",
-            label: "Value (€)",
+            label: "Amount (€)",
             required: true
         }
     ],
@@ -89,9 +89,9 @@ export const receiptModalConfig = {
             displayField: "id"
         },
         {
-            key: "value",
+            key: "amount",
             type: "number",
-            label: "Value (€)",
+            label: "Amount (€)",
             required: true
         }
     ],

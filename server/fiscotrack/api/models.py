@@ -46,7 +46,16 @@ class Invoice(models.Model):
     
     def __str__(self):
         return f"Invoice #{self.invoice_number or self.id}"
-   
+    
+    @property
+    def category_details(self):
+        if self.category:
+            return {'id': self.category.id,
+                    'title': self.category.title,
+                    'color': self.category.color}
+        else:
+            return None
+            
     @property
     def total_received(self):
         return sum(r.amount for r in self.receipts.all())
@@ -67,16 +76,39 @@ class Expense(models.Model):
     title = models.CharField(max_length=50)
     date = models.DateField()
     amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="expenses")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="expenses")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="expenses")
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="expenses", null=True)
+    expense_number = models.CharField(max_length=50, blank=True, null=True)
     
     def __str__(self):
         return self.title
+    
+    @property
+    def category_details(self):
+        if self.category:
+            return {'id': self.category.id,
+                    'title': self.category.title,
+                    'color': self.category.color}
+        else:
+            return None
+            
+    @property
+    def invoice_details(self):
+        if self.invoice:
+            return {
+                'id': self.invoice.id,
+                'invoice_number': self.invoice.invoice_number,
+                'title': self.invoice.title,
+            }
+        else:
+            return None
+    
    
     @property
-    def total_received(self):
+    def total_paid(self):
         return sum(i.total_received for i in self.receipts.all())
     
     class Meta:
@@ -91,13 +123,14 @@ class Expense(models.Model):
         ]
 
 class Receipt(models.Model):
-    expense = models.ForeignKey(Expense, on_delete=models.CASCADE, related_name="receipts", null=True)
-    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="receipts", null=True)
     date = models.DateField()
     amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     receipt_number = models.CharField(max_length=50, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    expense = models.ForeignKey(Expense, on_delete=models.CASCADE, related_name="receipts", null=True)
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="receipts", null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="receipts")
     
     def __str__(self):
         return f"Receipt #{self.receipt_number or self.id}"
@@ -133,15 +166,37 @@ class Receipt(models.Model):
     
     @property
     def category_details(self):
-        return self.invoice.expense.category if self.invoice and self.invoice.expense else None
-    
+        if self.invoice:
+            return {'id': self.invoice.category.id,
+                    'title': self.invoice.category.title,
+                    'color': self.invoice.category.color}
+        elif self.expense:
+            return {'id': self.expense.category.id,
+                    'title': self.expense.category.title,
+                    'color': self.expense.category.color}
+        else:
+            return None
+            
     @property
     def invoice_details(self):
-        return self.invoice if self.invoice else None
+        if self.invoice:
+            return {
+                'id': self.invoice.id,
+                'invoice_number': self.invoice.invoice_number,
+                'title': self.invoice.title,
+            }
+        else:
+            return None
     
     @property
     def expense_details(self):
-        return self.invoice.expense if self.invoice and self.invoice.expense else None
+        if self.expense:
+            return {
+                'id': self.expense.id,
+                'title': self.expense.title,
+            }
+        else:
+            return None
     
     class Meta:
         ordering = ['-date', '-created_at']

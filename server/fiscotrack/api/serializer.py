@@ -11,20 +11,6 @@ class ReceiptSerializer(serializers.ModelSerializer):
         model = Receipt
         fields = '__all__'
     
-    def validate(self, data):
-        invoice = data["invoice"]
-        value = data["value"]
-        already_received = invoice.total_received
-        
-        if self.instance:
-            already_received -= self.instance.value
-            
-        if already_received + value > invoice.value:
-            raise serializers.ValidationError(
-                f"Invoice total exceeded: max {invoice.value}, attempted {already_received + value}"
-            )
-        return data
-    
 class PrioritySerializer(serializers.ModelSerializer):
     class Meta:
         model = Priority
@@ -61,38 +47,24 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class InvoiceSerializer(serializers.ModelSerializer):
     category_details = serializers.ReadOnlyField()
-    expense_details = serializers.ReadOnlyField()
     total_received = serializers.ReadOnlyField()
     is_paid = serializers.ReadOnlyField()
     
     class Meta:
         model = Invoice
-        fields = ['id', 'date', 'value', 'expense', 'invoice_number', 
-                 'category_details', 'expense_details', 'total_received', 'is_paid']
-    
-    def validate(self, data):
-        expense = data['expense']
-        value = data['value']
-        already_received = expense.total_received
-        
-        if self.instance:
-            already_received -= self.instance.value
-            
-        if already_received + value > expense.value:
-            raise serializers.ValidationError(
-                f"Invoice total exceeded: max {expense.value}, attempted {already_received + value}"
-            )
-        return data
+        fields = ['id', 'date', 'amount', 'invoice_number', 
+                  'category_details', 'total_received', 'is_paid']
 
 class ExpenseSerializer(serializers.ModelSerializer):
     category_details = CategorySerializer(source='category', read_only=True)
-    total_received = serializers.ReadOnlyField()
+    invoice_details = InvoiceSerializer(source='invoice', read_only=True)
+    total_paid = serializers.ReadOnlyField()
     is_paid = serializers.ReadOnlyField()
     
     class Meta:
         model = Expense
-        fields = ['id', 'title', 'date', 'value', 'category', 'category_details', 
-                 'total_received', 'is_paid']
+        fields = ['id', 'title', 'date', 'amount', 'category', 'category_details', 'invoice_details',
+                 'total_paid', 'is_paid']
         extra_kwargs = {"user": {"read_only": True}}
 
 class UserSerializer(serializers.ModelSerializer):

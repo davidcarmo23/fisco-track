@@ -33,10 +33,13 @@ const ActionButtons = ({ expense, onEdit, onDelete }) => (
 );
 
 function ExpensesDatatable({
+    invoiceId,
     showAddButton = false,
     showEditActions = true
 }) {
-    const { items: expenses, loading, refetch } = useFilteredList('expenses');
+    const { items: expenses, loading, refetch } = useFilteredList('expenses',
+        invoiceId,
+        'invoice_id');
 
     // Estados do modal (movidos para cá)
     const [modalOpen, setModalOpen] = useState(false);
@@ -118,6 +121,25 @@ function ExpensesDatatable({
                 </Typography>
             )
         },
+        ...(!invoiceId ? [{
+            field: 'invoice',
+            headerName: 'Invoice',
+            width: 250,
+            flex: 1,
+            renderCell: (params) => (
+                <Typography
+                    component={NavLink}
+                    to={`/invoices/view/${params.row.invoice_details?.id}`}
+                    sx={{
+                        textDecoration: 'none',
+                        color: 'primary.main',
+                        '&:hover': { textDecoration: 'underline' }
+                    }}
+                >
+                    {params.row.invoice_details?.invoice_number}
+                </Typography>
+            )
+        }] : []),
         {
             field: 'date',
             headerName: 'Date',
@@ -143,7 +165,7 @@ function ExpensesDatatable({
         },
         {
             field: 'amount',
-            headerName: 'Value',
+            headerName: 'Amount',
             width: 150,
             align: 'right',
             renderCell: (params) => {

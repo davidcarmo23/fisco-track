@@ -36,5 +36,5 @@ urlpatterns = [
     path('documents/', DocumentListCreate.as_view(), name='document-list-create'),
     path('documents/<int:pk>/', DocumentDetail.as_view(), name='document-detail'),
     
-    path('recent_activity/', recent_activities.as_view(), name='recent-activity'),
+    path('recent_activity/', recent_activities, name='recent-activity'),
 ]

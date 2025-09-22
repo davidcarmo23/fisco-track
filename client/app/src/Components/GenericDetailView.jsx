@@ -29,6 +29,7 @@ function GenericDetailView({ config }) {
         if (id) {
             api.get(`${config.endpoint}${id}/`)
                 .then(res => {
+                    console.log(res.data);
                     setItem(res.data);
                     setLoading(false);
                 })
@@ -172,7 +173,7 @@ function GenericDetailView({ config }) {
                                     {config.financials.totalLabel || "TOTAL VALUE"}
                                 </Typography>
                                 <Typography variant="h5" color="text.primary" fontWeight="bold">
-                                    {totalValue.toFixed(2)} €
+                                    {totalValue} €
                                 </Typography>
                             </Box>
                         </Grid>
@@ -194,7 +195,7 @@ function GenericDetailView({ config }) {
                                     {config.financials.remainingLabel || "REMAINING"}
                                 </Typography>
                                 <Typography variant="h5" fontWeight="bold">
-                                    {remainingValue.toFixed(2)} €
+                                    {remainingValue} €
                                 </Typography>
                             </Box>
                         </Grid>

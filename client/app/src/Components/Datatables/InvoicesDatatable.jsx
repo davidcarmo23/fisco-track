@@ -124,29 +124,10 @@ function InvoicesDatatable({
                         '&:hover': { textDecoration: 'underline' }
                     }}
                 >
-                    Invoice #{params.row.id}
+                    {params.row.invoice_number}
                 </Typography>
             )
         },
-        ...(!expenseId ? [{
-            field: 'expense',
-            headerName: 'Expense',
-            width: 250,
-            flex: 1,
-            renderCell: (params) => (
-                <Typography
-                    component={NavLink}
-                    to={`/expenses/view/${params.row.expense_details.id}`}
-                    sx={{
-                        textDecoration: 'none',
-                        color: 'primary.main',
-                        '&:hover': { textDecoration: 'underline' }
-                    }}
-                >
-                    {params.row.expense_details.title}
-                </Typography>
-            )
-        }] : []),
         {
             field: 'date',
             headerName: 'Date',

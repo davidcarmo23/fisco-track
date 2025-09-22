@@ -21,14 +21,14 @@ export const expenseDetailConfig = {
     },
 
     calculations: {
-        totalValue: (item) => parseFloat(item.value || 0),
+        totalValue: (item) => parseFloat(item.amount || 0),
         receivedValue: (item) => parseFloat(item.total_received || 0),
-        remainingValue: (item) => parseFloat(item.value || 0) - parseFloat(item.total_received || 0),
+        remainingValue: (item) => parseFloat(item.amount || 0) - parseFloat(item.total_received || 0),
         isPaid: (item) => item.is_paid || false
     },
 
     financials: {
-        totalLabel: "TOTAL VALUE",
+        totalLabel: "TOTAL AMOUNT",
         receivedLabel: "RECEIVED",
         remainingLabel: "REMAINING"
     },
@@ -45,7 +45,7 @@ export const expenseDetailConfig = {
             { key: "title", type: "text", label: "Title", required: true },
             { key: "date", type: "date", label: "Date", required: true },
             { key: "category", type: "select", label: "Category", required: true, optionsKey: "categories", displayField: "title" },
-            { key: "value", type: "number", label: "Value (€)", required: true }
+            { key: "amount", type: "number", label: "Amount (€)", required: true }
         ],
         dropdowns: [{ key: "categories", endpoint: "/api/categories/" }]
     }
@@ -71,34 +71,17 @@ export const invoiceDetailConfig = {
     },
 
     associations: [
-        {
-            label: "Associated Expense",
-            getData: (item) => item.expense_details ?
-                <Typography
-                    component={NavLink}
-                    to={`/expenses/view/${item.expense_details.id}`}
-                    sx={{
-                        textDecoration: 'none',
-                        color: 'primary.main',
-                        '&:hover': { textDecoration: 'underline' }
-                    }}
-                >
-                    #{item.expense_details.id} - {item.expense_details.title}
-                </Typography>
-                :
-                `Expense #${item.expense}`
-        }
     ],
 
     calculations: {
-        totalValue: (item) => item.value || 0,
+        totalValue: (item) => item.amount || 0,
         receivedValue: (item) => item.total_received || 0,
-        remainingValue: (item) => (item.value || 0) - (item.total_received || 0),
+        remainingValue: (item) => (item.amount || 0) - (item.total_received || 0),
         isPaid: (item) => item.is_paid || false
     },
 
     financials: {
-        totalLabel: "INVOICE VALUE",
+        totalLabel: "INVOICE AMOUNT",
         receivedLabel: "RECEIVED",
         remainingLabel: "REMAINING"
     },
@@ -113,7 +96,7 @@ export const invoiceDetailConfig = {
         fields: [
             { key: "date", type: "date", label: "Date", required: true },
             { key: "expense", type: "select", label: "Expense", required: true, optionsKey: "expenses", displayField: "title" },
-            { key: "value", type: "number", label: "Value (€)", required: true }
+            { key: "amount", type: "number", label: "Amount (€)", required: true }
         ],
         dropdowns: [{ key: "expenses", endpoint: "/api/expenses/" }]
     }
