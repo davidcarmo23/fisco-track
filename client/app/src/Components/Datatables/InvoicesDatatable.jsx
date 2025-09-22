@@ -173,13 +173,13 @@ function InvoicesDatatable({
             }
         },
         {
-            field: 'value',
-            headerName: 'Value',
+            field: 'amount',
+            headerName: 'Amount',
             width: 150,
             flex: 1,
             align: 'right',
             renderCell: (params) => {
-                const value = params.row?.value;
+                const value = params.row?.amount;
                 if (value == null) return '0.00 €';
                 return `${parseFloat(value).toFixed(2)} €`;
             }

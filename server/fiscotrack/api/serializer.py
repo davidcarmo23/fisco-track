@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Invoice, Receipt, Category, Expense, Priority
+from .models import Invoice, Receipt, Category, Expense, Priority,Document
 
 class ReceiptSerializer(serializers.ModelSerializer):
     invoice_details = serializers.ReadOnlyField()
@@ -29,6 +29,30 @@ class PrioritySerializer(serializers.ModelSerializer):
     class Meta:
         model = Priority
         fields = '__all__'
+        
+class DocumentSerializer(serializers.ModelSerializer):
+    file_path_local = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Document
+        fields = ['id', 'file_name', 'file_path', 'description', 'content_type', 'content_id','file_path_local']
+        extra_kwargs = {
+            'file_size': {'read_only': True},
+            'mime_type': {'read_only': True},
+            'user': {'read_only': True}
+        }
+        
+    def get_file_path_local(self, obj):
+        if obj.file_path:
+            return obj.file_path.name  # Returns just 'documents/2025/09/filename.pdf'
+        return None
+    
+    def create(self, validated_data):
+        file_obj = validated_data.get('file_path')
+        if file_obj:
+            validated_data['file_size'] = file_obj.size
+            validated_data['mime_type'] = file_obj.content_type
+        return super().create(validated_data)
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:

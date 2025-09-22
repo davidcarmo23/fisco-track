@@ -2,3 +2,6 @@ server/fiscotrack/fiscotrack/settings.py
 client/app/.env
 server/fiscotrack/.env
 server/fiscotrack/documents
+server/fiscotrack/api/__pycache__
+server/fiscotrack/api/migrations/__pycache__
+server/fiscotrack/fiscotrack/__pycache__

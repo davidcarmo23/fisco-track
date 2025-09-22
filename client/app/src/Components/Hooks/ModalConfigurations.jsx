@@ -154,3 +154,28 @@ export const priorityModalConfig = {
         }
     ]
 };
+
+export const documentModalConfig = {
+    entityName: "Document",
+    endpoint: "/api/documents/",
+    fields: [
+        {
+            key: "file_name",
+            type: "text",
+            label: "File Name",
+            required: true
+        },
+        {
+            key: "description",
+            type: "text",
+            label: "Description",
+            required: false
+        },
+        {
+            key: "file",
+            type: "file",
+            label: "File",
+            required: true
+        }
+    ]
+};

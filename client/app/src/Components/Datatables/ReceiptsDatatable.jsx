@@ -31,14 +31,14 @@ const ActionButtons = ({ receipt, onEdit, onDelete }) => (
 );
 
 function ReceiptsDatatable({
-    invoiceId = null,
-    showAddButton = false,
-    showEditActions = true
+    parentId = null,
+    showAddButton = true,
+    context = 'general'
 }) {
     const { items: receipts, loading, refetch } = useFilteredList(
         'receipts',
-        invoiceId,
-        'invoice_id'
+        parentId,
+        context === 'expenses' ? 'expense_id' : 'invoice_id'
     );
 
     // Estados do modal (movidos para cá)
@@ -87,7 +87,7 @@ function ReceiptsDatatable({
 
     const headerActions = showAddButton ? (
         <Stack direction="row" spacing={1}>
-           {invoiceId && (<Button
+            {parentId && (<Button
                 variant="contained"
                 color="secondary"
                 startIcon={<FileUploadIcon />}
@@ -135,7 +135,7 @@ function ReceiptsDatatable({
                 return new Date(params.row.date).toLocaleDateString("pt-PT");
             }
         },
-        ...(!invoiceId ? [{
+        ...(!parentId ? [{
             field: 'invoice',
             headerName: 'Invoice',
             width: 200,
@@ -154,7 +154,7 @@ function ReceiptsDatatable({
                 </Typography>
             )
         }] : []),
-        ...(!invoiceId ? [{
+        ...(!parentId ? [{
             field: 'invoice_date',
             headerName: 'Invoice Date',
             width: 150,
@@ -165,18 +165,18 @@ function ReceiptsDatatable({
             }
         }] : []),
         {
-            field: 'value',
-            headerName: 'Value',
+            field: 'amount',
+            headerName: 'Amount',
             width: 150,
             flex: 1,
             align: 'right',
             renderCell: (params) => {
-                const value = params.row?.value;
+                const value = params.row?.amount;
                 if (value == null) return '0.00 €';
                 return `${parseFloat(value).toFixed(2)} €`;
             }
         },
-        ...(showEditActions ? [{
+        [{
             field: 'actions',
             headerName: 'Actions',
             width: 120,
@@ -189,13 +189,13 @@ function ReceiptsDatatable({
                     onDelete={handleDelete}
                 />
             )
-        }] : [])
+        }]
     ];
 
     return (
         <>
             <DataTableBase
-                title={invoiceId ? "Related Receipts" : "Receipts"}
+                title={parentId ? "Related Receipts" : "Receipts"}
                 rows={receipts}
                 columns={columns}
                 loading={loading}

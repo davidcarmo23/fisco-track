@@ -7,6 +7,7 @@ import { useState } from 'react';
 import InvoicesDatatable from '../Datatables/InvoicesDatatable';
 import ReceiptsDatatable from '../Datatables/ReceiptsDatatable';
 import ExpensesDatatable from "../Datatables/ExpensesDatatable";
+import DocumentsDatatable from "../Datatables/DocumentsDatatable";
 
 function DynamicTab({ currEl, parentId = null }) {
     // State para controlar qual tab está ativa
@@ -41,9 +42,12 @@ function DynamicTab({ currEl, parentId = null }) {
             case 'invoices':
                 return <InvoicesDatatable expenseId={parentId} showAddButton={true} />;
             case 'receipts':
-                return <ReceiptsDatatable invoiceId={parentId} showAddButton={true} />;
+                return <ReceiptsDatatable parentId={parentId} context={currEl.toLowerCase()} />;
             case 'documents':
-                return <div>Documents component - Coming soon!</div>;
+                return <DocumentsDatatable
+                    contentType={currEl.toLowerCase()}
+                    contentId={parentId}
+                />;
             default:
                 return <div>Select a tab</div>;
         }

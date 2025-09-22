@@ -4,8 +4,8 @@ from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth.models import User
 from django.shortcuts import render
-from .models import Invoice,Receipt,Category,Expense,Document,Priority
-from .serializer import InvoiceSerializer,ReceiptSerializer,CategorySerializer,ExpenseSerializer, UserSerializer,PrioritySerializer
+from .models import Invoice,Receipt,Category,Expense,Document,Priority,models
+from .serializer import InvoiceSerializer,ReceiptSerializer,CategorySerializer,ExpenseSerializer, UserSerializer,PrioritySerializer, DocumentSerializer
 import os
 import tempfile
 import pandas as pd
@@ -163,6 +163,46 @@ class PriorityDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PrioritySerializer
     permission_classes = [IsAuthenticated]
  
+ 
+class DocumentListCreate(generics.ListCreateAPIView):
+    serializer_class = DocumentSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Document.objects.filter(user=user)
+        
+        # Extract first value from QueryDict lists
+        content_type = self.request.query_params.get('content_type')
+        content_id = self.request.query_params.get('content_id')
+        
+        print(f"Extracted: content_type={content_type}, content_id={content_id}")
+        
+        if content_type and content_id:
+            # Apply your serializer normalization here too
+            normalized_type = {
+                'expenses': 'expense',
+                'invoices': 'invoice', 
+                'receipts': 'receipt'
+            }.get(content_type, content_type)
+            
+            queryset = queryset.filter(content_type=normalized_type, content_id=content_id)
+            print(f"Filtered queryset count: {queryset.count()}")
+        
+        return queryset
+    
+    def perform_create(self, serializer):
+        try:
+            serializer.save(user=self.request.user)
+        except Exception as e:
+            print("Error type:", type(e))
+            print("Error message:", str(e))
+            raise
+
+class DocumentDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Document.objects.all()
+    serializer_class = DocumentSerializer
+    permission_classes = [IsAuthenticated]
 
 IMPORT_CONFIGS = {
     'expense': {
@@ -510,3 +550,58 @@ def get_import_template(request):
     response['Content-Disposition'] = f'attachment; filename="{entity_type}_import_template.xlsx"'
     
     return response
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def recent_activities(request):
+    user = request.user
+    limit = int(request.GET.get('limit', 20))
+    
+    # Get recent items - Invoice doesn't have user field, so filter through expense
+    recent_invoices = Invoice.objects.filter(user=user).select_related('category').order_by('-created_at')[:limit//3]
+    recent_expenses = Expense.objects.filter(user=user).select_related('category').order_by('-created_at')[:limit//3]
+    recent_receipts = Receipt.objects.filter(expense__user=user).select_related('expense__invoice__category', 'invoice__category').order_by('-created_at')[:limit//3]
+    
+    activities = []
+    
+    for invoice in recent_invoices:
+        activities.append({
+            'id': invoice.id,
+            'type': 'invoice',
+            'title': invoice.title,
+            'date': invoice.date,
+            'amount': invoice.amount,
+            'category': invoice.category.title if invoice.category else None
+        })
+    
+    for expense in recent_expenses:
+        activities.append({
+            'id': expense.id,
+            'type': 'expense', 
+            'title': expense.title,
+            'date': expense.date,
+            'amount': expense.amount,
+            'category': expense.category.title if expense.category else None
+        })
+    
+    for receipt in recent_receipts:
+        # Get category from expense or invoice
+        category = None
+        if receipt.expense and receipt.expense.invoice:
+            category = receipt.expense.invoice.category.title
+        elif receipt.invoice:
+            category = receipt.invoice.category.title
+            
+        activities.append({
+            'id': receipt.id,
+            'type': 'receipt',
+            'title': f"Receipt #{receipt.receipt_number or receipt.id}",
+            'date': receipt.date,
+            'amount': receipt.amount,
+            'category': category,
+        })
+    
+    # Sort by date (most recent first) and limit results
+    activities.sort(key=lambda x: x['date'], reverse=True)
+    return Response(activities[:limit])

@@ -34,25 +34,50 @@ class Category(models.Model):
             models.Index(fields=['title']),
         ]
 
+class Invoice(models.Model):
+    title = models.CharField(max_length=50)
+    date = models.DateField()
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=0) 
+    invoice_number = models.CharField(max_length=50, blank=True, null=True)  # Added for better identification
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="invoices")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="invoices")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Invoice #{self.invoice_number or self.id}"
+   
+    @property
+    def total_received(self):
+        return sum(r.amount for r in self.receipts.all())
+    
+    @property
+    def is_paid(self):
+        return self.total_received >= self.amount
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+        indexes = [
+            models.Index(fields=['date']),  # Date filtering
+            models.Index(fields=['invoice_number']),  # Invoice number lookup
+            models.Index(fields=['amount']),  # Value-based queries
+        ]
+
 class Expense(models.Model):
     title = models.CharField(max_length=50)
     date = models.DateField()
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="expenses")
-    value = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="expenses")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="expenses")
     
     def __str__(self):
         return self.title
    
     @property
     def total_received(self):
-        return sum(i.total_received for i in self.invoices.all())
-    
-    @property
-    def is_paid(self):
-        return all(i.is_paid for i in self.invoices.all()) and self.total_received >= self.value
+        return sum(i.total_received for i in self.receipts.all())
     
     class Meta:
         ordering = ['-date', '-created_at']
@@ -62,62 +87,14 @@ class Expense(models.Model):
             models.Index(fields=['date']),  # Date range queries
             models.Index(fields=['category', '-date']),  # Category filtering with date sort
             models.Index(fields=['user', '-created_at']),  # Recently created expenses
-            models.Index(fields=['value']),  # Value-based filtering/sorting
-        ]
-
-class Invoice(models.Model):
-    date = models.DateField()
-    value = models.DecimalField(max_digits=12, decimal_places=2, default=0) 
-    expense = models.ForeignKey(Expense, on_delete=models.CASCADE, related_name="invoices")
-    invoice_number = models.CharField(max_length=50, blank=True, null=True)  # Added for better identification
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    def __str__(self):
-        return f"Invoice #{self.invoice_number or self.id}"
-   
-    @property
-    def total_received(self):
-        return sum(r.value for r in self.receipts.all())
-    
-    @property
-    def is_paid(self):
-        return self.total_received >= self.value
-    
-    @property
-    def category_details(self):
-        if self.expense and self.expense.category:
-            return {
-                'id': self.expense.category.id,
-                'title': self.expense.category.title,
-                'color': self.expense.category.color,
-            }
-        return None
-    
-    @property
-    def expense_details(self):
-        if self.expense:
-            return {
-                'id': self.expense.id,
-                'title': self.expense.title,
-            }
-        return None
-    
-    class Meta:
-        ordering = ['-date', '-created_at']
-        indexes = [
-            models.Index(fields=['expense', '-date']),  # Invoices for specific expense
-            # models.Index(fields=['expense__user', '-date']),  # User's invoices by date
-            models.Index(fields=['date']),  # Date filtering
-            # models.Index(fields=['expense__user', 'expense']),  # User + expense filtering
-            models.Index(fields=['invoice_number']),  # Invoice number lookup
-            models.Index(fields=['value']),  # Value-based queries
+            models.Index(fields=['amount']),  # Value-based filtering/sorting
         ]
 
 class Receipt(models.Model):
-    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="receipts")
+    expense = models.ForeignKey(Expense, on_delete=models.CASCADE, related_name="receipts", null=True)
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="receipts", null=True)
     date = models.DateField()
-    value = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     receipt_number = models.CharField(max_length=50, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -126,20 +103,29 @@ class Receipt(models.Model):
         return f"Receipt #{self.receipt_number or self.id}"
    
     def clean(self):
-        if not self.invoice:
+        current_received = 0
+        threshold_amount = 0
+        validation_string = ""
+        if not self.invoice and not self.expense:
             return
-            
-        # Calculate current total received excluding this receipt if updating
-        current_received = sum(
-            r.value for r in self.invoice.receipts.exclude(pk=self.pk) if r.pk != self.pk
-        )
-        
-        if current_received + self.value > self.invoice.value:
-            raise ValidationError(
-                f"Overpayment detected: Invoice {self.invoice.id} value is {self.invoice.value}, "
-                f"already received {current_received}, but you're trying to add {self.value}. "
-                f"Maximum allowed: {self.invoice.value - current_received}"
+        if self.invoice:    
+            threshold_amount = self.invoice.amount
+            # Calculate current total received excluding this receipt if updating
+            current_received = sum(
+                r.amount for r in self.invoice.receipts.exclude(pk=self.pk) if r.pk != self.pk
             )
+            validation_string = f"Overpayment detected: Invoice {self.invoice.id} amount is {self.invoice.amount}, " "\n"   f"already received {current_received}, but you're trying to add {self.amount}. " "\n"  f"Maximum allowed: {self.invoice.amount - current_received}"
+        else:
+            threshold_amount = self.expense.amount
+            current_received = sum(
+                r.amount for r in self.expense.receipts.exclude(pk=self.pk) if r.pk != self.pk
+            )
+            
+            validation_string = f"Overpayment detected: Expense {self.expense.id} amount is {self.expense.amount}, " "\n"   f"already received {current_received}, but you're trying to add {self.amount}. " "\n"  f"Maximum allowed: {self.expense.amount - current_received}"
+            
+        
+        if current_received + self.amount > threshold_amount:
+            raise ValidationError( validation_string )
     
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -165,7 +151,7 @@ class Receipt(models.Model):
             # models.Index(fields=['invoice__expense__user', '-date']),  # User's receipts
             models.Index(fields=['date']),  # Date filtering
             models.Index(fields=['receipt_number']),  # Receipt number lookup
-            models.Index(fields=['value']),  # Value-based queries
+            models.Index(fields=['amount']),  # Value-based queries
         ]
 
 class Document(models.Model):
@@ -199,6 +185,7 @@ class Document(models.Model):
         elif self.content_type == 'receipt':
             if not Receipt.objects.filter(id=self.content_id, invoice__expense__user=self.user).exists():
                 raise ValidationError("Invalid receipt ID or not owned by user")
+            
     
     class Meta:
         ordering = ['-uploaded_at']

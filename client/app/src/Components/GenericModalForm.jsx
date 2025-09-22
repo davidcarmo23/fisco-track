@@ -15,6 +15,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs from "dayjs";
+import InputFileUpload from "./FileUploadButton";
 
 function GenericModalForm({
     open,
@@ -140,7 +141,7 @@ function GenericModalForm({
                         <DatePicker
                             label={field.label}
                             format="DD/MM/YYYY"
-                            value={dayjs(value) }
+                            value={dayjs(value)}
                             onChange={(newValue) => handleFieldChange(field.key, newValue)}
                             slotProps={{ textField: { fullWidth: true, required: field.required } }}
                         />

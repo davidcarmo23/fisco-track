@@ -5,7 +5,9 @@ from .views import (
     CategoryListCreate, CategoryDetail,
     PriorityListCreate, PriorityDetail,
     ReceiptListCreate, ReceiptDetail,
+    DocumentListCreate,DocumentDetail,
     GetUserView,
+    recent_activities,
     preview_excel_import, import_excel_data, get_import_template
 )
 
@@ -30,4 +32,9 @@ urlpatterns = [
     path('import/preview/', preview_excel_import, name='import-preview'),
     path('import/execute/', import_excel_data, name='import-execute'),
     path('import/template/', get_import_template, name='import-template'),
+    
+    path('documents/', DocumentListCreate.as_view(), name='document-list-create'),
+    path('documents/<int:pk>/', DocumentDetail.as_view(), name='document-detail'),
+    
+    path('recent_activity/', recent_activities.as_view(), name='recent-activity'),
 ]
