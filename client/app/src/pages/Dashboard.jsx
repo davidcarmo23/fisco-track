@@ -7,36 +7,33 @@ import RecentActivityDatatable from '../Components/Datatables/RecentActivityData
 
 function Dashboard() {
     return (
-        <>
-
-            <Grid container spacing={3}>
-                <Grid item size={{ xs: 12, md: 12 }}>
-                    <MonthlyDetails />
-                </Grid>
-
-                <Grid item size={{ xs: 12, md: 6 }}>
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="h6">Expenses Over Time</Typography>
-                        <ExpensesOverTime />
-                    </Paper>
-                </Grid>
-
-                <Grid item size={{ xs: 12, md: 6 }} >
-                    <ExpensesByCategory />
-                </Grid>
-
-                <Grid item size={{ xs: 12, md: 12 }}>
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="h6">Income vs Expenses</Typography>
-                        <IncomeVsExpenses />
-                    </Paper>
-                </Grid>
-
-                <Grid item size={{ xs: 12, md: 12 }}>
-                    <RecentActivityDatatable />
-                </Grid>
+        <Grid container spacing={3}>
+            <Grid item size={{ xs: 12, md: 12 }}>
+                <MonthlyDetails />
             </Grid>
-        </>
+
+            <Grid item size={{ xs: 12, md: 6 }}>
+                <Paper sx={{ p: 2 }}>
+                    <Typography variant="h6">Expenses Over Time</Typography>
+                    <ExpensesOverTime />
+                </Paper>
+            </Grid>
+
+            <Grid item size={{ xs: 12, md: 6 }} >
+                <ExpensesByCategory />
+            </Grid>
+
+            <Grid item size={{ xs: 12, md: 12 }}>
+                <Paper sx={{ p: 2 }}>
+                    <Typography variant="h6">Income vs Expenses</Typography>
+                    <IncomeVsExpenses />
+                </Paper>
+            </Grid>
+
+            <Grid item size={{ xs: 12, md: 12 }}>
+                <RecentActivityDatatable />
+            </Grid>
+        </Grid>
     );
 }
 
