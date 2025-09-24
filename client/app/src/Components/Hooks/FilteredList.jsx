@@ -14,7 +14,9 @@ export const useFilteredList = (endpoint, parentId = null, parentField = null) =
         }
 
         api.get(url)
-            .then(res => setItems(res.data))
+            .then(res => {
+                console.log(res.data)
+                setItems(res.data)})
             .catch(err => console.error(err))
             .finally(() => setLoading(false));
     }, [endpoint, parentId, parentField]);

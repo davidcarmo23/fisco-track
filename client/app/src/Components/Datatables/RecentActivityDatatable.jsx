@@ -10,28 +10,8 @@ import FileUploadIcon from '@mui/icons-material/FileUpload';
 import { NavLink } from 'react-router-dom';
 import api from '../../api';
 
-function RecentActivityDatatable({
-    parentId = null,
-    showAddButton = true,
-    context = 'general'
-}) {
-    const { items, loading, refetch } = useFilteredList('recent-activities');
-
-    const deleteItem = (parentId) => {
-        let parentType = parentId.contentType
-        if (window.confirm(`Are you sure you want to delete this ${parentType}?`)) {
-            api.delete(`/api/${parentType}s/${id}/`)
-                .then((res) => {
-                    if (res.status === 204) {
-                        alert("Record deleted");
-                        refetch(); // Usa refetch em vez de getExpenses
-                    } else {
-                        alert("Failed to delete record");
-                    }
-                })
-                .catch((err) => alert(err));
-        }
-    };
+function RecentActivityDatatable({}) {
+    const { items, loading, refetch } = useFilteredList('recent_activities');
 
     const columns = [
         {
@@ -45,21 +25,21 @@ function RecentActivityDatatable({
             }
         },
         {
-            field: 'type',
-            headerName: 'Type',
+            field: 'Title',
+            headerName: 'Title',
             width: 200,
             flex: 1,
             renderCell: (params) => (
                 <Typography
                     component={NavLink}
-                    to={`/all_items/view/${params.row.id}`}
+                    to={`/${params.row.type}s/view/${params.row.id}`}
                     sx={{
                         textDecoration: 'none',
                         color: 'primary.main',
                         '&:hover': { textDecoration: 'underline' }
                     }}
                 >
-                    Receipt #{params.row.id}
+                    {params.row.title}
                 </Typography>
             )
         },
@@ -86,7 +66,7 @@ function RecentActivityDatatable({
                 if (!category) return '-';
                 return (
                     <span style={{ color: category.color || '#000' }}>
-                        {category.title || 'No title'}
+                        {category || 'No title'}
                     </span>
                 );
             }

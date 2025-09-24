@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Paper, Typography, TextField, MenuItem } from "@mui/material";
+import { Paper, TextField, MenuItem } from "@mui/material";
 import { BarChart } from "@mui/x-charts/BarChart";
 import api from "../../api";
 
@@ -19,28 +19,14 @@ function IncomeVsExpenses() {
                 const res = await api.get("/api/analytics/income-vs-expenses/", {
                     params: { comparison_period: comparisonPeriod },
                 });
+                
+                const { data: serverData } = res.data;
 
-                const { income, expenses } = res.data;
-
-                // Merge income & expenses by month
-                const merged = {};
-                income.forEach((i) => {
-                    merged[i.month] = { month: i.month, income: i.total, expenses: 0 };
-                });
-                expenses.forEach((e) => {
-                    if (!merged[e.month]) {
-                        merged[e.month] = { month: e.month, income: 0, expenses: e.total };
-                    } else {
-                        merged[e.month].expenses = e.total;
-                    }
-                });
-
-                // Convert object → array sorted by month
-                const mergedArray = Object.values(merged).sort(
+                const sorted = [...serverData].sort(
                     (a, b) => new Date(a.month) - new Date(b.month)
                 );
 
-                setData(mergedArray);
+                setData(sorted);
             } catch (err) {
                 console.error("Error fetching income vs expenses:", err);
             }
@@ -50,7 +36,7 @@ function IncomeVsExpenses() {
     }, [comparisonPeriod]);
 
     return (
-        <Paper sx={{ p: 2 }}>
+        <>
             {/* Period Selector */}
             <TextField
                 select
@@ -87,10 +73,9 @@ function IncomeVsExpenses() {
                     { dataKey: "income", label: "Income", color: "#4caf50" },
                     { dataKey: "expenses", label: "Expenses", color: "#f44336" },
                 ]}
-                width={600}
                 height={400}
             />
-        </Paper>
+        </>
     );
 }
 

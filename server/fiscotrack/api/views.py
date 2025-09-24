@@ -3,7 +3,8 @@ import io
 import random
 import tempfile
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import date,datetime, timedelta
+from dateutil.relativedelta import relativedelta 
 
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -13,7 +14,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Sum, Count
-from django.db.models.functions import TruncYear,TruncMonth,TruncWeek
+from django.db.models.functions import TruncYear,TruncMonth,TruncWeek,TruncDay
 from django.http import HttpResponse
 from django.utils import timezone
 
@@ -583,7 +584,8 @@ def recent_activities(request):
             'title': invoice.title,
             'date': invoice.date,
             'amount': invoice.amount,
-            'category': invoice.category.title if invoice.category else None
+            'category': invoice.category.title if invoice.category else None,
+            'category_color': invoice.category.color if invoice.category else None
         })
     
     for expense in recent_expenses:
@@ -593,7 +595,8 @@ def recent_activities(request):
             'title': expense.title,
             'date': expense.date,
             'amount': expense.amount,
-            'category': expense.category.title if expense.category else None
+            'category': expense.category.title if expense.category else None,
+            'category_color': expense.category.color if expense.category else None
         })
     
     for receipt in recent_receipts:
@@ -617,55 +620,89 @@ def recent_activities(request):
     activities.sort(key=lambda x: x['date'], reverse=True)
     return Response(activities[:limit])
 
+def month_range(start_date: date, end_date: date):
+    """Return list of date objects at first day of each month from start_date to end_date (inclusive)."""
+    months = []
+    cur = date(start_date.year, start_date.month, 1)
+    last = date(end_date.year, end_date.month, 1)
+    while cur <= last:
+        months.append(cur)
+        if cur.month == 12:
+            cur = date(cur.year + 1, 1, 1)
+        else:
+            cur = date(cur.year, cur.month + 1, 1)
+    return months
+
+def _to_date(d):
+    """Safe conversion: if d is datetime -> return date(); if already date -> return unchanged."""
+    return d.date() if hasattr(d, "date") else d
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def expenses_over_time(request):
     user = request.user
-    granularity = request.GET.get('granularity', 'month')
-    period = request.GET.get('period')
-    
+    granularity = request.GET.get('granularity', 'year')
+    period = request.GET.get('period')  # e.g. "2025", "2025-09", "2025-W38"
+
     queryset = Expense.objects.filter(user=user)
-    
-    # Filter by period based on granularity
-    if granularity == 'year' and period:
-        queryset = queryset.filter(date__year=period)
-    elif granularity == 'month' and period:
-        try:
-            year, month = period.split('-')
-            queryset = queryset.filter(date__year=int(year), date__month=int(month))
-        except (ValueError, TypeError):
-            pass  # Invalid period format, return all data
-    elif granularity == 'week' and period:
-        try:
-            year, week = period.replace('W', '').split('-')
-            
-            # Convert to date range for that week
-            first_day_of_year = datetime(int(year), 1, 1)
-            target_week = first_day_of_year + timedelta(weeks=int(week)-1)
-            week_start = target_week - timedelta(days=target_week.weekday())
-            week_end = week_start + timedelta(days=6)
-            queryset = queryset.filter(date__range=[week_start.date(), week_end.date()])
-        except (ValueError, TypeError):
-            pass
-    
-    if granularity == 'week':
-        queryset = queryset.annotate(period=TruncWeek('date'))
-    elif granularity == 'month':
-        queryset = queryset.annotate(period=TruncMonth('date'))
-    else:  # year
-        queryset = queryset.annotate(period=TruncYear('date'))
-    
-    expenses_by_period = queryset.values('period')\
-        .annotate(total=Sum('amount'))\
-        .order_by('period')
-    
-    formatted_data = []
-    for item in expenses_by_period:
-        formatted_data.append({
-            'period': item['period'].isoformat() if item['period'] else None,
-            'total': float(item['total']) if item['total'] else 0
-        })
-    
+
+    if granularity == "year":
+        # Expect period like "2025"
+        year = int(period) if period else timezone.now().year
+        start = date(year, 1, 1)
+        end = date(year, 12, 31)
+        queryset = queryset.filter(date__range=[start, end])
+        queryset = queryset.annotate(period=TruncMonth("date"))
+
+    elif granularity == "month":
+        # Expect period like "2025-09"
+        if period:
+            try:
+                year, month = map(int, period.split("-"))
+            except ValueError:
+                year, month = timezone.now().year, timezone.now().month
+        else:
+            year, month = timezone.now().year, timezone.now().month
+
+        start = date(year, month, 1)
+        end = (start + relativedelta(months=1)) - timedelta(days=1)
+        queryset = queryset.filter(date__range=[start, end])
+        queryset = queryset.annotate(period=TruncWeek("date"))
+
+    elif granularity == "week":
+        # Expect period like "2025-W38"
+        if period:
+            try:
+                year, week = period.replace("W", "").split("-")
+                year, week = int(year), int(week)
+            except ValueError:
+                today = timezone.now().date()
+                year, week = today.isocalendar()[0], today.isocalendar()[1]
+        else:
+            today = timezone.now().date()
+            year, week = today.isocalendar()[0], today.isocalendar()[1]
+
+        # First day of week (Monday)
+        week_start = datetime.strptime(f"{year}-W{week}-1", "%G-W%V-%u").date()
+        week_end = week_start + timedelta(days=6)
+        queryset = queryset.filter(date__range=[week_start, week_end])
+        queryset = queryset.annotate(period=TruncDay("date"))
+
+    # Aggregate
+    expenses_by_period = (
+        queryset.values("period")
+        .annotate(total=Sum("amount"))
+        .order_by("period")
+    )
+
+    formatted_data = [
+        {
+            "period": item["period"].isoformat() if item["period"] else None,
+            "total": float(item["total"]) if item["total"] else 0,
+        }
+        for item in expenses_by_period
+    ]
+
     return Response(formatted_data)
 
 @api_view(['GET'])
@@ -675,20 +712,28 @@ def expenses_by_category(request):
     date_range = request.GET.get('date_range', 'all')
     
     queryset = Expense.objects.filter(user=user)
+    today = timezone.now().date()
     
     # Apply date range filtering
     if date_range == 'last-month':
-        one_month_ago = timezone.now().date() - timedelta(days=30)
-        queryset = queryset.filter(date__gte=one_month_ago)
+        first_of_this_month = today.replace(day=1)
+        last_month_end = first_of_this_month - timedelta(days=1)
+        last_month_start = last_month_end.replace(day=1)
+        queryset = queryset.filter(date__range=[last_month_start, last_month_end])
+
     elif date_range == 'last-3-months':
-        three_months_ago = timezone.now().date() - timedelta(days=90)
-        queryset = queryset.filter(date__gte=three_months_ago)
+        first_of_this_month = today.replace(day=1)
+        three_months_ago = first_of_this_month - relativedelta(months=3)
+        queryset = queryset.filter(date__gte=three_months_ago, date__lt=first_of_this_month)
+
     elif date_range == 'last-year':
-        one_year_ago = timezone.now().date() - timedelta(days=365)
-        queryset = queryset.filter(date__gte=one_year_ago)
+        start_last_year = date(today.year - 1, 1, 1)
+        end_last_year = date(today.year - 1, 12, 31)
+        queryset = queryset.filter(date__range=[start_last_year, end_last_year])
     
-    category_totals = queryset.values('category__title', 'category__color')\
-        .annotate(total=Sum('amount'))\
+    # Aggregate totals
+    category_totals = queryset.values('category__title', 'category__color') \
+        .annotate(total=Sum('amount')) \
         .order_by('-total')
     
     grand_total = sum(float(record['total']) for record in category_totals if record['total']) or 1
@@ -698,7 +743,7 @@ def expenses_by_category(request):
         total_amount = float(record['total']) if record['total'] else 0
         treated_data.append({
             "value": round((total_amount / grand_total) * 100, 2),
-            "amount": total_amount,  # Include actual amount too
+            "amount": total_amount,
             "label": record["category__title"],
             "color": record["category__color"],
         })
@@ -710,54 +755,154 @@ def expenses_by_category(request):
 def income_vs_expenses(request):
     user = request.user
     comparison_period = request.GET.get('comparison_period', 'last-12-months')
-    
-    # Apply period filtering
-    if comparison_period == 'last-6-months':
-        start_date = timezone.now().date() - timedelta(days=180)
-    elif comparison_period == 'last-12-months':
-        start_date = timezone.now().date() - timedelta(days=365)
-    elif comparison_period == 'current-year':
-        start_date = timezone.now().date().replace(month=1, day=1)
-    else:
-        start_date = None
-    
-    expenses_query = Expense.objects.filter(user=user)
-    invoices_query = Invoice.objects.filter(user=user)
-    
-    if start_date:
-        expenses_query = expenses_query.filter(date__gte=start_date)
-        invoices_query = invoices_query.filter(date__gte=start_date)
-    
-    expenses_by_month = expenses_query\
-        .annotate(month=TruncMonth('date'))\
-        .values('month')\
-        .annotate(expense_total=Sum('amount'))\
-        .order_by('month')
-    
-    invoices_by_month = invoices_query\
-        .annotate(month=TruncMonth('date'))\
-        .values('month')\
-        .annotate(income_total=Sum('amount'))\
-        .order_by('month')
 
-    formatted_expenses = [
-        {
-            'month': item['month'].isoformat(),
-            'total': float(item['expense_total']) if item['expense_total'] else 0
-        }
-        for item in expenses_by_month
-    ]
-    
-    formatted_income = [
-        {
-            'month': item['month'].isoformat(), 
-            'total': float(item['income_total']) if item['income_total'] else 0
-        }
-        for item in invoices_by_month
-    ]
-    
+    today = timezone.now().date()
+    start_date = None
+    end_date = None
+
+    if comparison_period == 'last-6-months':
+        # start at the first day of the month 6 months ago (approx)
+        approx_start = today - timedelta(days=180)
+        start_date = date(approx_start.year, approx_start.month, 1)
+        end_date = today
+    elif comparison_period == 'last-12-months':
+        approx_start = today - timedelta(days=365)
+        start_date = date(approx_start.year, approx_start.month, 1)
+        end_date = today
+    elif comparison_period == 'current-year':
+        start_date = date(today.year, 1, 1)
+        end_date = date(today.year, 12, 31)
+    else:
+        # no filtering (all time)
+        start_date = None
+        end_date = None
+
+    expenses_q = Expense.objects.filter(user=user)
+    invoices_q = Invoice.objects.filter(user=user)
+
+    if start_date and end_date:
+        expenses_q = expenses_q.filter(date__gte=start_date, date__lte=end_date)
+        invoices_q = invoices_q.filter(date__gte=start_date, date__lte=end_date)
+    elif start_date:
+        expenses_q = expenses_q.filter(date__gte=start_date)
+        invoices_q = invoices_q.filter(date__gte=start_date)
+
+    # Aggregate by month
+    expenses_by_month = (
+        expenses_q.annotate(month=TruncMonth('date'))
+        .values('month')
+        .annotate(expense_total=Sum('amount'))
+        .order_by('month')
+    )
+
+    invoices_by_month = (
+        invoices_q.annotate(month=TruncMonth('date'))
+        .values('month')
+        .annotate(income_total=Sum('amount'))
+        .order_by('month')
+    )
+
+    exp_map = {
+        _to_date(item['month']): float(item['expense_total'] or 0) for item in expenses_by_month
+    }
+    inc_map = {
+        _to_date(item['month']): float(item['income_total'] or 0) for item in invoices_by_month
+    }
+
+    if start_date and end_date:
+        months = month_range(start_date, end_date)
+    elif start_date:
+        months = month_range(start_date, today)
+    else:
+        # fallback: use union of months present in data
+        keys = set(list(exp_map.keys()) + list(inc_map.keys()))
+        months = sorted(keys)
+
+    merged = []
+    for m in months:
+        merged.append({
+            'month': m.isoformat(),
+            'expenses': exp_map.get(m, 0.0),
+            'income': inc_map.get(m, 0.0),
+        })
+
     return Response({
-        'expenses': formatted_expenses,
-        'income': formatted_income,
+        'data': merged,
         'period': comparison_period
     })
+    
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def analytics_overview(request):
+    user = request.user
+    today = timezone.now().date()
+
+    # --- Period boundaries ---
+    current_month_start = today.replace(day=1)
+    last_month_end = current_month_start - timedelta(days=1)
+    last_month_start = last_month_end.replace(day=1)
+
+    # --- Queries ---
+    expenses_qs = Expense.objects.filter(user=user)
+    invoices_qs = Invoice.objects.filter(user=user)
+
+    # Current month aggregates
+    expenses_current = (
+        expenses_qs.filter(date__gte=current_month_start, date__lte=today)
+        .aggregate(expense_total=Sum('amount'))
+    )['expense_total'] or 0
+
+    invoices_current = (
+        invoices_qs.filter(date__gte=current_month_start, date__lte=today)
+        .aggregate(
+            income_total=Sum('amount'),
+            total_invoices=Count('id')
+        )
+    )
+    income_current = invoices_current['income_total'] or 0
+    total_invoices_current = invoices_current['total_invoices'] or 0
+
+    # Last month aggregates
+    expenses_last = (
+        expenses_qs.filter(date__gte=last_month_start, date__lte=last_month_end)
+        .aggregate(expense_total=Sum('amount'))
+    )['expense_total'] or 0
+
+    income_last = (
+        invoices_qs.filter(date__gte=last_month_start, date__lte=last_month_end)
+        .aggregate(income_total=Sum('amount'))
+    )['income_total'] or 0
+
+    # --- Calculate trends ---
+    def calc_trend(current, last):
+        if last == 0:
+            return 100 if current > 0 else 0
+        return round(((current - last) / last) * 100, 2)
+
+    monthly_expenses_trend = calc_trend(expenses_current, expenses_last)
+    monthly_earnings_trend = calc_trend(income_current, income_last)
+
+    # --- Pending payments ---
+    pending_invoices = [inv for inv in invoices_qs if not inv.is_paid]
+    pending_expenses = [
+        exp for exp in expenses_qs if exp.invoice and not exp.invoice.is_paid
+    ]
+
+    pending_payments = {
+        "count": len(pending_invoices) + len(pending_expenses),
+        "expenses": sum(exp.amount for exp in pending_expenses),
+        "invoices": sum(inv.amount - inv.total_received for inv in pending_invoices),
+    }
+
+    # --- Final formatted data ---
+    formatted_data = {
+        "monthlyExpenses": float(expenses_current),
+        "monthlyExpensesTrend": monthly_expenses_trend,
+        "totalInvoices": total_invoices_current,
+        "monthlyEarnings": float(income_current),
+        "monthlyEarningsTrend": monthly_earnings_trend,
+        "pendingPayments": pending_payments,
+    }
+
+    return Response(formatted_data)

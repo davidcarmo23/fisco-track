@@ -9,9 +9,10 @@ const granularityItems = [
     { value: "week", label: "Week" },
 ];
 
+
 function ExpensesOverTime() {
     const [granularity, setGranularity] = useState("month");
-    const [period, setPeriod] = useState(""); // e.g. "2025", "2025-09", "2025-W38"
+    const [period, setPeriod] = useState("");
     const [data, setData] = useState([]);
 
     useEffect(() => {
@@ -28,8 +29,28 @@ function ExpensesOverTime() {
         fetchData();
     }, [granularity, period]);
 
+    const formatLabel = (value, granularity) => {
+        const date = new Date(value);
+
+        if (granularity === "year") {
+            return date.toLocaleDateString("en-US", { month: "short" });
+        }
+
+        if (granularity === "month") {
+            const weekNumber = Math.ceil(date.getDate() / 7);
+            return `Week ${weekNumber}`;
+        }
+
+        if (granularity === "week") {
+            return date.toLocaleDateString("en-US", { weekday: "short" });
+        }
+
+        return value;
+    };
+
+
     return (
-        <Paper sx={{ p: 2 }}>
+        <>
             {/* Granularity Selector */}
             <TextField
                 select
@@ -73,19 +94,14 @@ function ExpensesOverTime() {
                         dataKey: "period",
                         scaleType: "band",
                         label: "Period",
-                        valueFormatter: (value) =>
-                            new Date(value).toLocaleDateString("en-US", {
-                                month: granularity === "month" ? "short" : undefined,
-                                year: "numeric",
-                                ...(granularity === "week" && { day: "numeric" }),
-                            }),
+                        valueFormatter: (value) => formatLabel(value, granularity),
                     },
                 ]}
                 series={[{ dataKey: "total", label: "Expenses", color: "#f44336" }]}
                 width={600}
                 height={400}
             />
-        </Paper>
+        </>
     );
 }
 
