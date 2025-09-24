@@ -128,37 +128,40 @@ class Receipt(models.Model):
     receipt_number = models.CharField(max_length=50, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    expense = models.ForeignKey(Expense, on_delete=models.CASCADE, related_name="receipts", null=True)
-    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="receipts", null=True)
+    expense = models.ForeignKey(Expense, on_delete=models.CASCADE, related_name="receipts", null=True, blank=True)
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="receipts", null=True, blank=True)  
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="receipts")
     
     def __str__(self):
         return f"Receipt #{self.receipt_number or self.id}"
    
     def clean(self):
+        if not self.invoice and not self.expense:
+            raise ValidationError("Receipt must be associated with either an Invoice or an Expense.")
+        
+        if self.invoice and self.expense:
+            raise ValidationError("Receipt cannot be associated with both an Invoice and an Expense.")
+        
         current_received = 0
         threshold_amount = 0
         validation_string = ""
-        if not self.invoice and not self.expense:
-            return
+        
         if self.invoice:    
             threshold_amount = self.invoice.amount
-            # Calculate current total received excluding this receipt if updating
             current_received = sum(
                 r.amount for r in self.invoice.receipts.exclude(pk=self.pk) if r.pk != self.pk
             )
-            validation_string = f"Overpayment detected: Invoice {self.invoice.id} amount is {self.invoice.amount}, " "\n"   f"already received {current_received}, but you're trying to add {self.amount}. " "\n"  f"Maximum allowed: {self.invoice.amount - current_received}"
-        else:
+            validation_string = f"Overpayment detected: Invoice {self.invoice.id} amount is {self.invoice.amount}, already received {current_received}, but you're trying to add {self.amount}. Maximum allowed: {self.invoice.amount - current_received}"
+        
+        elif self.expense:
             threshold_amount = self.expense.amount
             current_received = sum(
                 r.amount for r in self.expense.receipts.exclude(pk=self.pk) if r.pk != self.pk
             )
-            
-            validation_string = f"Overpayment detected: Expense {self.expense.id} amount is {self.expense.amount}, " "\n"   f"already received {current_received}, but you're trying to add {self.amount}. " "\n"  f"Maximum allowed: {self.expense.amount - current_received}"
-            
+            validation_string = f"Overpayment detected: Expense {self.expense.id} amount is {self.expense.amount}, already received {current_received}, but you're trying to add {self.amount}. Maximum allowed: {self.expense.amount - current_received}"
         
         if current_received + self.amount > threshold_amount:
-            raise ValidationError( validation_string )
+            raise ValidationError(validation_string)
     
     def save(self, *args, **kwargs):
         self.full_clean()

@@ -10,6 +10,11 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    FormControl,
+    FormControlLabel,
+    FormLabel,
+    RadioGroup,
+    Radio
 } from "@mui/material";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -148,7 +153,43 @@ function GenericModalForm({
                     </LocalizationProvider>
                 );
 
+            case 'radio':
+                return (
+                    <FormControl key={field.key} component="fieldset" required={field.required}>
+                        <FormLabel component="legend">{field.label}</FormLabel>
+                        <RadioGroup
+                        row
+                            value={value}
+                            onChange={(e) => {
+                                handleFieldChange(field.key, e.target.value);
+                                // Clear dependent fields when radio changes
+                                if (field.key === 'receiptType') {
+                                    handleFieldChange('invoice', '');
+                                    handleFieldChange('expense', '');
+                                }
+                            }}
+                        >
+                            {field.options.map((option) => (
+                                <FormControlLabel
+                                    key={option.value}
+                                    value={option.value}
+                                    control={<Radio />}
+                                    label={option.label}
+                                />
+                            ))}
+                        </RadioGroup>
+                    </FormControl>
+                );
+
             case 'select':
+                // Conditional rendering for select fields
+                if (field.conditionalOn) {
+                    const conditionValue = formData[field.conditionalOn.field];
+                    if (conditionValue !== field.conditionalOn.value) {
+                        return null; // Don't render if condition not met
+                    }
+                }
+
                 const options = dropdownData[field.optionsKey] || [];
                 return (
                     <TextField

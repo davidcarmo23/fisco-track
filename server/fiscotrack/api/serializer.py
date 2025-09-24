@@ -10,6 +10,11 @@ class ReceiptSerializer(serializers.ModelSerializer):
     class Meta:
         model = Receipt
         fields = '__all__'
+        extra_kwargs = {
+            "user": {"read_only": True},
+            'expense': {'required': False, 'allow_null': True},
+            'invoice': {'required': False, 'allow_null': True},
+        }
     
 class PrioritySerializer(serializers.ModelSerializer):
     class Meta:

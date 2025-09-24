@@ -92,7 +92,7 @@ function CategoriesDatatable({
 
     const columns = [
         {
-            field: 'id',
+            field: 'title',
             headerName: 'Title',
             width: 250,
             flex: 1,
@@ -113,6 +113,7 @@ function CategoriesDatatable({
             headerName: 'Color',
             width: 180,
             flex: 1,
+            sortable: false,
             renderCell: (params) => {
                 const color = params.row?.color;
                 if (!color) return '-';

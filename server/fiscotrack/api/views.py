@@ -1,19 +1,26 @@
+import os
+import io
+import random
+import tempfile
+import pandas as pd
+from datetime import datetime, timedelta
+
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
+
 from django.contrib.auth.models import User
-from django.shortcuts import render
-from .models import Invoice,Receipt,Category,Expense,Document,Priority,models
-from .serializer import InvoiceSerializer,ReceiptSerializer,CategorySerializer,ExpenseSerializer, UserSerializer,PrioritySerializer, DocumentSerializer
-import os
-import tempfile
-import pandas as pd
-import json
 from django.db import transaction
-import io
+from django.db.models import Sum, Count
+from django.db.models.functions import TruncYear,TruncMonth,TruncWeek
 from django.http import HttpResponse
-import random
+from django.utils import timezone
+
+from .models import Invoice,Receipt,Category,Expense,Document,Priority
+from .serializer import InvoiceSerializer,ReceiptSerializer,CategorySerializer,ExpenseSerializer, UserSerializer,PrioritySerializer, DocumentSerializer
+
+
 
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -135,7 +142,7 @@ class ReceiptListCreate(generics.ListCreateAPIView):
         print("Request data:", self.request.data)
         print("Serializer validated data:", serializer.validated_data)
         try:
-            serializer.save()
+            serializer.save(user= self.request.user)
         except Exception as e:
             print("Error type:", type(e))
             print("Error message:", str(e))
@@ -563,10 +570,9 @@ def recent_activities(request):
     user = request.user
     limit = int(request.GET.get('limit', 20))
     
-    # Get recent items - Invoice doesn't have user field, so filter through expense
     recent_invoices = Invoice.objects.filter(user=user).select_related('category').order_by('-created_at')[:limit//3]
     recent_expenses = Expense.objects.filter(user=user).select_related('category').order_by('-created_at')[:limit//3]
-    recent_receipts = Receipt.objects.filter(expense__user=user).select_related('expense__invoice__category', 'invoice__category').order_by('-created_at')[:limit//3]
+    recent_receipts = Receipt.objects.filter(expense__user=user).select_related('expense__category', 'invoice__category').order_by('-created_at')[:limit//3]
     
     activities = []
     
@@ -610,3 +616,148 @@ def recent_activities(request):
     # Sort by date (most recent first) and limit results
     activities.sort(key=lambda x: x['date'], reverse=True)
     return Response(activities[:limit])
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def expenses_over_time(request):
+    user = request.user
+    granularity = request.GET.get('granularity', 'month')
+    period = request.GET.get('period')
+    
+    queryset = Expense.objects.filter(user=user)
+    
+    # Filter by period based on granularity
+    if granularity == 'year' and period:
+        queryset = queryset.filter(date__year=period)
+    elif granularity == 'month' and period:
+        try:
+            year, month = period.split('-')
+            queryset = queryset.filter(date__year=int(year), date__month=int(month))
+        except (ValueError, TypeError):
+            pass  # Invalid period format, return all data
+    elif granularity == 'week' and period:
+        try:
+            year, week = period.replace('W', '').split('-')
+            
+            # Convert to date range for that week
+            first_day_of_year = datetime(int(year), 1, 1)
+            target_week = first_day_of_year + timedelta(weeks=int(week)-1)
+            week_start = target_week - timedelta(days=target_week.weekday())
+            week_end = week_start + timedelta(days=6)
+            queryset = queryset.filter(date__range=[week_start.date(), week_end.date()])
+        except (ValueError, TypeError):
+            pass
+    
+    if granularity == 'week':
+        queryset = queryset.annotate(period=TruncWeek('date'))
+    elif granularity == 'month':
+        queryset = queryset.annotate(period=TruncMonth('date'))
+    else:  # year
+        queryset = queryset.annotate(period=TruncYear('date'))
+    
+    expenses_by_period = queryset.values('period')\
+        .annotate(total=Sum('amount'))\
+        .order_by('period')
+    
+    formatted_data = []
+    for item in expenses_by_period:
+        formatted_data.append({
+            'period': item['period'].isoformat() if item['period'] else None,
+            'total': float(item['total']) if item['total'] else 0
+        })
+    
+    return Response(formatted_data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def expenses_by_category(request):
+    user = request.user
+    date_range = request.GET.get('date_range', 'all')
+    
+    queryset = Expense.objects.filter(user=user)
+    
+    # Apply date range filtering
+    if date_range == 'last-month':
+        one_month_ago = timezone.now().date() - timedelta(days=30)
+        queryset = queryset.filter(date__gte=one_month_ago)
+    elif date_range == 'last-3-months':
+        three_months_ago = timezone.now().date() - timedelta(days=90)
+        queryset = queryset.filter(date__gte=three_months_ago)
+    elif date_range == 'last-year':
+        one_year_ago = timezone.now().date() - timedelta(days=365)
+        queryset = queryset.filter(date__gte=one_year_ago)
+    
+    category_totals = queryset.values('category__title', 'category__color')\
+        .annotate(total=Sum('amount'))\
+        .order_by('-total')
+    
+    grand_total = sum(float(record['total']) for record in category_totals if record['total']) or 1
+    
+    treated_data = []
+    for record in category_totals:
+        total_amount = float(record['total']) if record['total'] else 0
+        treated_data.append({
+            "value": round((total_amount / grand_total) * 100, 2),
+            "amount": total_amount,  # Include actual amount too
+            "label": record["category__title"],
+            "color": record["category__color"],
+        })
+    
+    return Response(treated_data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def income_vs_expenses(request):
+    user = request.user
+    comparison_period = request.GET.get('comparison_period', 'last-12-months')
+    
+    # Apply period filtering
+    if comparison_period == 'last-6-months':
+        start_date = timezone.now().date() - timedelta(days=180)
+    elif comparison_period == 'last-12-months':
+        start_date = timezone.now().date() - timedelta(days=365)
+    elif comparison_period == 'current-year':
+        start_date = timezone.now().date().replace(month=1, day=1)
+    else:
+        start_date = None
+    
+    expenses_query = Expense.objects.filter(user=user)
+    invoices_query = Invoice.objects.filter(user=user)
+    
+    if start_date:
+        expenses_query = expenses_query.filter(date__gte=start_date)
+        invoices_query = invoices_query.filter(date__gte=start_date)
+    
+    expenses_by_month = expenses_query\
+        .annotate(month=TruncMonth('date'))\
+        .values('month')\
+        .annotate(expense_total=Sum('amount'))\
+        .order_by('month')
+    
+    invoices_by_month = invoices_query\
+        .annotate(month=TruncMonth('date'))\
+        .values('month')\
+        .annotate(income_total=Sum('amount'))\
+        .order_by('month')
+
+    formatted_expenses = [
+        {
+            'month': item['month'].isoformat(),
+            'total': float(item['expense_total']) if item['expense_total'] else 0
+        }
+        for item in expenses_by_month
+    ]
+    
+    formatted_income = [
+        {
+            'month': item['month'].isoformat(), 
+            'total': float(item['income_total']) if item['income_total'] else 0
+        }
+        for item in invoices_by_month
+    ]
+    
+    return Response({
+        'expenses': formatted_expenses,
+        'income': formatted_income,
+        'period': comparison_period
+    })

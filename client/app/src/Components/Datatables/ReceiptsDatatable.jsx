@@ -179,6 +179,7 @@ function ReceiptsDatatable({
             width: 150,
             flex: 1,
             align: 'right',
+            type: 'number',
             renderCell: (params) => {
                 const value = params.row?.amount;
                 if (value == null) return '0.00 €';

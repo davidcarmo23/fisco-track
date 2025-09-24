@@ -37,8 +37,6 @@ function InvoicesDatatable({
 }) {
     const { items: invoices, loading, refetch } = useFilteredList(
         'invoices',
-        expenseId,
-        'expense_id'
     );
 
     // Estados do modal (movidos para cá)
@@ -139,7 +137,7 @@ function InvoicesDatatable({
             }
         },
         {
-            field: 'category_details',
+            field: 'category',
             headerName: 'Category',
             width: 180,
             flex: 1,
@@ -159,6 +157,7 @@ function InvoicesDatatable({
             width: 150,
             flex: 1,
             align: 'right',
+            type: 'number',
             renderCell: (params) => {
                 const value = params.row?.amount;
                 if (value == null) return '0.00 €';

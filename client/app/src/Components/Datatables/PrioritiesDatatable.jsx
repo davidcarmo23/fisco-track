@@ -92,7 +92,7 @@ function PrioritiesDatatable({
 
     const columns = [
         {
-            field: 'id',
+            field: 'title',
             headerName: 'Title',
             width: 250,
             flex: 1,
@@ -113,6 +113,7 @@ function PrioritiesDatatable({
             headerName: 'Value',
             width: 180,
             flex: 1,
+            type: 'number',
             renderCell: (params) => {
                 <span style={{ color: params.row?.color || '#000' }}>
                 </span>

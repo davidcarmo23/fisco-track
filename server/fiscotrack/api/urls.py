@@ -8,7 +8,8 @@ from .views import (
     DocumentListCreate,DocumentDetail,
     GetUserView,
     recent_activities,
-    preview_excel_import, import_excel_data, get_import_template
+    preview_excel_import, import_excel_data, get_import_template,
+    expenses_by_category,expenses_over_time,income_vs_expenses
 )
 
 urlpatterns = [
@@ -37,4 +38,8 @@ urlpatterns = [
     path('documents/<int:pk>/', DocumentDetail.as_view(), name='document-detail'),
     
     path('recent_activity/', recent_activities, name='recent-activity'),
+    
+    path('analytics/expenses-over-time/', expenses_over_time, name='expenses-over-time'),
+    path('analytics/expenses-by-category/', expenses_by_category, name='expenses-by-category'),
+    path('analytics/income-vs-expenses/', income_vs_expenses, name='income-vs-expenses'),
 ]

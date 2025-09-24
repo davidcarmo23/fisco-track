@@ -50,8 +50,8 @@ function NavBar() {
   ];
 
   const secondaryLinks = [
-    { to: "/help", label: "Help", icon: <HelpOutlineIcon /> },
-    { to: "/notifications", label: "Notifications", icon: <NotificationsIcon /> },
+    // { to: "/help", label: "Help", icon: <HelpOutlineIcon /> },
+    // { to: "/notifications", label: "Notifications", icon: <NotificationsIcon /> },
     { to: "/settings", label: "Settings", icon: <SettingsIcon /> },
   ];
 

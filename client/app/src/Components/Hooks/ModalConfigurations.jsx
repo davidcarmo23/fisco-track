@@ -81,12 +81,32 @@ export const receiptModalConfig = {
             required: true
         },
         {
+            key: "receiptType",
+            type: "radio",
+            label: "Assign Receipt To",
+            required: true,
+            options: [
+                { value: "invoice", label: "Invoice" },
+                { value: "expense", label: "Expense" }
+            ]
+        },
+        {
             key: "invoice",
             type: "select",
             label: "Invoice",
             required: true,
             optionsKey: "invoices",
-            displayField: "id"
+            displayField: "invoice_number",
+            conditionalOn: { field: "receiptType", value: "invoice" }
+        },
+        {
+            key: "expense",
+            type: "select",
+            label: "Expense",
+            required: true,
+            optionsKey: "expenses",
+            displayField: "title",
+            conditionalOn: { field: "receiptType", value: "expense" }
         },
         {
             key: "amount",
@@ -96,10 +116,8 @@ export const receiptModalConfig = {
         }
     ],
     dropdowns: [
-        {
-            key: "invoices",
-            endpoint: "/api/invoices/"
-        }
+        { key: "invoices", endpoint: "/api/invoices/" },
+        { key: "expenses", endpoint: "/api/expenses/" }
     ]
 };
 

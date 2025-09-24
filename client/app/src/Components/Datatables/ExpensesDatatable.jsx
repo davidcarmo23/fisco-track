@@ -126,6 +126,7 @@ function ExpensesDatatable({
             headerName: 'Invoice',
             width: 250,
             flex: 1,
+            sortable: false,
             renderCell: (params) => (
                 <Typography
                     component={NavLink}
@@ -144,15 +145,17 @@ function ExpensesDatatable({
             field: 'date',
             headerName: 'Date',
             width: 150,
+            flex: 1,
             renderCell: (params) => {
                 if (!params.row?.date) return '-';
                 return new Date(params.row.date).toLocaleDateString("pt-PT");
             }
         },
         {
-            field: 'category_details',
+            field: 'category',
             headerName: 'Category',
             width: 180,
+            flex: 1,
             renderCell: (params) => {
                 const category = params.row?.category_details;
                 if (!category) return '-';
@@ -167,7 +170,9 @@ function ExpensesDatatable({
             field: 'amount',
             headerName: 'Amount',
             width: 150,
+            flex: 1,
             align: 'right',
+            type: 'number',
             renderCell: (params) => {
                 const value = params.row?.amount;
                 if (value == null) return '0.00 €';
@@ -178,7 +183,9 @@ function ExpensesDatatable({
             field: 'total_received',
             headerName: 'Paid',
             width: 150,
+            flex: 1,
             align: 'right',
+            type: 'number',
             renderCell: (params) => {
                 const totalReceived = params.row?.total_received;
                 if (totalReceived == null) return '0.00 €';
